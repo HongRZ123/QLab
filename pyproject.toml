@@ -1,0 +1,42 @@
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+exclude = ["experiments"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"explore/*.py" = ["E402"]  # scripts modify sys.path before project imports
+"*/__main__.py" = ["E402"] # allow standalone entry points
+"run_strategy.py" = ["E402"]  # root script: sys.path before project imports
+"research_strategy.py" = ["E402"]  # root script: sys.path before project imports
+"templates/*.py" = ["E402"]  # template scripts: sys.path before project imports
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.basedpyright]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+reportMissingTypeStubs = "warning"
+reportUnknownMemberType = "warning"
+reportUnknownVariableType = "warning"
+reportUnknownArgumentType = "warning"
+reportMissingParameterType = "warning"
+
+reportUnusedVariable = "warning"
+include = ["data", "tests", "strategies", "backtest", "explore", "run_strategy.py", "research_strategy.py"]
+exclude = ["experiments"]

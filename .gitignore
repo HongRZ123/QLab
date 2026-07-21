@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Orchestration state (tooling, not project code)
+.omo/
+
+# Extracted epub HTML (large, regenerable from .epub)
+AT_Ch2-3/
+
+# Binary assets
+*.epub
+
+# Generated outputs
+output/
+
+# Local reference materials (copyrighted book content)
+books/
+docs/
