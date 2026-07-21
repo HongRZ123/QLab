@@ -13,7 +13,7 @@
 - numpy, pandas, statsmodels
 - 通达信盘后数据（设置环境变量 `QLAB_TDX_ROOT` 指向 `vipdoc` 目录，默认 `D:\new_tdx64\vipdoc`）
 
-### 30 秒跑通
+### 运行示例
 
 ```bash
 cd D:\EtLab\QLab
