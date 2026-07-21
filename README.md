@@ -1,5 +1,11 @@
 # QLab - A 股量化研究平台
 
+[![CI](https://github.com/HongRZ123/QLab/actions/workflows/ci.yml/badge.svg)](https://github.com/HongRZ123/QLab/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/HongRZ123/QLab)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)
+
+> **QLab** is an A-share quantitative research platform built on Chan's *Algorithmic Trading* methodology. It provides a full pipeline from data loading, statistical testing, signal extraction, and strategy development to a backtest engine with realistic A-share constraints (T+1, price limits, lot sizing, commissions) and walk-forward optimization.
+
 基于 Chan《Algorithmic Trading》方法论构建的 A 股量化研究框架。
 覆盖从数据加载、统计检验、信号提取、策略开发、回测引擎到 Walk-Forward 优化的完整管道。
 
