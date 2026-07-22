@@ -106,18 +106,22 @@ QLab/
 │   ├── test_data_interface.py       # OHLCVSource 协议测试
 │   └── test_tdx_source.py           # TDXSource 测试
 │
-├── stats/             # 统计分析层：ADF/Hurst/半衰期/CADF/Johansen、全市场扫描
-├── experiments/       # 实验层：完全独立的研究脚本
-├── run/               # 执行层：每个策略的端到端入口
+├── stats/             # 统计分析工具：ADF/Hurst/CADF/Johansen（稳定模块，可被引用）
+├── experiments/       # 自由探索脚本（独立运行，不被任何模块引用）
+├── run/               # 策略端到端入口（独立运行，不被任何模块引用）
 ├── alpha/             # 标的选取层：平稳性/动量/协整筛选 + ETF 宇宙
 ```
 
 ### 模块依赖（单向，无循环）
 
 ```
-data  ->  signals  ->  strategies  ->  backtest  ->  run/
-       ->  stats    ->  alpha      ->  run/
-       ->  stats    ->  explore/
+data  ->  signals  ->  strategies  ->  backtest
+       ->  stats    ->  alpha       ->  run/
+       ->  stats    ->  strategies  ->  backtest
+                                           ->  run/
+
+experiments/ 和 run/ 是仅有的两个不被任何模块引用的纯消费端。
+stats/ 是稳定的统计工具模块，被 alpha、strategies、backtest 等引用。
 ```
 
 导入方向（回测层内部）：`constraints.py ← core.py ← engine.py`
