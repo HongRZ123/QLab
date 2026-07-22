@@ -54,75 +54,106 @@ python my_run.py
 
 ```
 QLab/
-├── data/              # 数据层：TDX 日线读取、除权除息、交易规则、数据源抽象
-│   ├── interface.py       # OHLCVSource Protocol（数据源抽象）
-│   ├── sources/           # 数据源实现
-│   │   └── tdx.py             # TDXSource（包装 fetcher）
-│   ├── fetcher.py         # 通达信盘后数据读取
-│   ├── rules.py           # A 股交易规则（涨跌停、手数、停牌）
-│   └── dividend.py        # 除权除息检测与复权
+├── data/              # 数据层：TDX 读取、除权复权、A 股规则
+│   ├── fetcher.py             # 通达信盘后数据读取
+│   ├── dividend.py            # 除权除息检测与前复权
+│   ├── rules.py               # A 股交易规则（手数取整、成本、涨跌停）
+│   ├── interface.py           # OHLCVSource Protocol（可替换数据源抽象）
+│   └── sources/
+│       └── tdx.py             # TDXSource 实现
 │
-├── signals/           # 信号层：从市场数据中提取的、独立于交易策略的信息
-│   ├── vpa.py             # 量价信号（effort_vs_result / stopping_volume / ...）
-│   ├── pivot.py           # 价格结构信号（支点、震荡区间、突破检测）
-│   ├── trend.py           # 趋势健康度信号
-│   ├── kalman.py          # 卡尔曼信号（compute_kalman_spread）
-│   ├── stats.py           # 统计信号（ADF / Hurst / 半衰期）
-│   └── stats_cointegration.py  # 协整信号（CADF / Johansen）
+├── signals/           # 信号层：实时交易信号 + 统计信号，纯信息提取
+│   ├── vpa.py                 # 量价分析 (effort_vs_result / stopping_volume / ...)
+│   ├── pivot.py               # 价格结构 (detect_isolated_pivots / breakout)
+│   ├── trend.py               # 趋势状态 (trend_direction / trend_health)
+│   ├── kalman.py              # 卡尔曼滤波 (compute_kalman_spread)
+│   ├── stats.py               # 统计信号 (run_adf / hurst_exponent / estimate_half_life)
+│   └── stats_cointegration.py # 协整信号 (cadf_test / johansen_test)
 │
-├── strategies/        # 策略层：按 alpha 类型分类，消费信号生成 num_units
-│   ├── MR/                 # 均值回归策略
-│   │   ├── s4_linear.py        # S4 线性均值回归
-│   │   ├── s7_linear_portfolio.py  # S7 组合线性均值回归
-│   │   ├── s8_bollinger.py     # S8 布林带均值回归
-│   │   └── s9_kalman_hedge.py  # S9 卡尔曼动态对冲（委托 signals/kalman）
-│   ├── MM/                 # 做市策略
-│   │   └── s10_kalman_mm.py    # S10 卡尔曼做市
-│   ├── Tech/               # 技术分析策略
-│   │   ├── ma_crossover.py     # 均线交叉
-│   │   ├── vpa_trend.py        # VPA 量价趋势跟踪
-│   │   ├── vpa_reversal.py     # VPA 反转形态
-│   │   └── vpa_breakout.py     # VPA 放量突破
-│   ├── experimental/       # 实验策略
-│   │   ├── s11_rsi_draft.py    # RSI 草稿
-│   │   └── s12_vpa_draft.py    # VPA 量价策略（消费 signals/vpa）
-│   └── registry.py         # 策略注册表
+├── alpha/             # 标的选取：截面筛选，输出候选列表
+│   ├── stationarity.py        # 平稳性评分与筛选
+│   ├── momentum.py            # 趋势动量评分与筛选
+│   ├── cointegration.py       # 协整配对/组合筛选
+│   └── defaults.py            # ETF 分类宇宙 (38只) + 按类别取标的
 │
-├── backtest/          # 回测层：三层拆分（约束 ← 纯PnL ← 薄封装）
-│   ├── core.py             # run_core() 纯 Chan PnL 循环（零 A 股逻辑）
-│   ├── constraints.py      # Constraint/CostModel 协议 + PriceLimits/SuspensionCheck/AShareCost
-│   ├── engine.py           # run_backtest() 薄封装（创建约束+成本 -> 委托 run_core）
-│   └── metrics.py          # 绩效指标（Sharpe, 最大回撤等）
+├── strategies/        # 策略层：时序决策，输出 num_units
+│   ├── MR/                    # 均值回归
+│   │   ├── s4_linear.py           # S4 线性 MR (连续仓位)
+│   │   ├── s7_linear_portfolio.py # S7 组合 MR (Johansen 特征向量)
+│   │   ├── s8_bollinger.py        # S8 布林带 MR (0/1)
+│   │   └── s9_kalman_hedge.py     # S9 卡尔曼动态对冲
+│   ├── Tech/                  # 技术分析
+│   │   ├── ma_crossover.py        # 均线金叉死叉
+│   │   ├── vpa_trend.py           # VPA 量价趋势跟踪
+│   │   ├── vpa_reversal.py        # VPA 止损量反转
+│   │   └── vpa_breakout.py        # VPA 放量突破
+│   ├── MM/
+│   │   └── s10_kalman_mm.py       # S10 卡尔曼做市
+│   ├── experimental/
+│   │   ├── s11_rsi_draft.py       # RSI 草案
+│   │   ├── s12_vpa_draft.py       # VPA 草案
+│   │   └── custom_strategy.py     # 自定义策略开发模板
+│   ├── registry.py            # 目录索引 (不做 dispatch)
+│   └── __init__.py
 │
-├── tests/             # 检验层：pytest 单元测试
-│   ├── test_engine_snapshot.py      # 引擎快照测试（6 场景）
-│   ├── test_backtest_core.py        # run_core vs run_backtest 等价性
-│   ├── test_constraints.py          # 约束 + 成本模型单元测试
-│   ├── test_kalman_spread.py        # 信号提取数值一致性
-│   ├── test_vpa.py                  # VPA 信号单元测试
-│   ├── test_vpa_strategy.py         # VPA 策略单元测试（草案）
-│   ├── test_vpa_strategies.py       # VPA 策略单元测试（vpa_trend/reversal/breakout）
-│   ├── test_pivot.py                # 价格结构信号单元测试
-│   ├── test_trend.py                # 趋势健康度信号单元测试
-│   ├── test_data_interface.py       # OHLCVSource 协议测试
-│   └── test_tdx_source.py           # TDXSource 测试
+├── backtest/          # 回测层：只接受 num_units，计算含成本权益曲线
+│   ├── engine.py              # run_backtest() — T+1 / 整数手 / 成本
+│   ├── core.py                # run_core() — 纯 PnL 循环 (零 A 股逻辑)
+│   ├── constraints.py         # Constraint / CostModel Protocol + A 股实现
+│   └── metrics.py             # performance_summary() — Sharpe / APR / MaxDD
 │
-├── stats/             # 统计探索工具（scan.py，仅供 experiments/ 引用）
-├── experiments/       # 自由探索脚本（独立运行，不被任何模块引用）
-├── run/               # 策略端到端入口（独立运行，不被任何模块引用）
-├── alpha/             # 标的选取层：平稳性/动量/协整筛选 + ETF 宇宙
+├── stats/             # 探索工具：仅供 experiments/ 引用
+│   └── scan.py                # 全市场平稳性扫描
+│
+├── run/               # 端到端入口：每个策略一个脚本，不被任何模块引用
+│   ├── run_linear_mr.py       # S4
+│   ├── run_bollinger_mr.py    # S8
+│   ├── run_ma_crossover.py    # 均线
+│   ├── run_vpa_trend.py       # VPA 趋势
+│   ├── run_vpa_reversal.py    # VPA 反转
+│   ├── run_vpa_breakout.py    # VPA 突破
+│   ├── run_kalman_hedge.py    # S9
+│   ├── run_linear_portfolio.py# S7
+│   ├── run_walk_forward.py    # Walk-Forward 参数估计
+│   ├── research_workflow.py   # 完整研究流程
+│   └── _common.py             # 共享工具
+│
+├── tests/             # 单元测试：pytest
+│   ├── test_vpa.py            # VPA 信号 (17 tests)
+│   ├── test_vpa_strategies.py # VPA 策略
+│   ├── test_engine_snapshot.py# 回测引擎快照 (6 场景)
+│   ├── test_backtest_core.py  # core vs engine
+│   ├── test_constraints.py    # 约束 + 成本
+│   ├── test_kalman_spread.py  # 卡尔曼信号
+│   ├── test_pivot.py          # 价格结构
+│   ├── test_trend.py          # 趋势健康度
+│   ├── test_data_interface.py # OHLCVSource
+│   └── test_tdx_source.py     # TDXSource
+│
+├── experiments/       # 自由探索：独立脚本，不 import 主项目，不被任何模块引用
+│   ├── kalman_mu_*.py         # 卡尔曼 μ 估计系列 (6个)
+│   ├── chan_s4_futures.py     # S4 期货适配
+│   ├── hurst_switch.py        # Hurst 体制切换
+│   ├── trend_mr_composite.py  # 趋势+MR 复合
+│   └── trend_mr_portfolio.py  # 趋势+MR 组合
+│
+├── docs/              # 文档：书籍提取、方法论参考
+├── output/            # 输出：扫描报告 CSV
+└── templates/         # （已废弃，迁移至 run/）
 ```
 
 ### 模块依赖（单向，无循环）
 
 ```
-data  ->  signals  ->  strategies  ->  backtest
-       ->  stats    ->  alpha       ->  run/
-       ->  stats    ->  strategies  ->  backtest
-                                           ->  run/
+data → signals → alpha → strategy → backtest
+data → signals → strategy → backtest
+                                    ↘
+                                     run/
+data → stats → experiments/
 
-experiments/ 和 run/ 是仅有的两个不被任何模块引用的纯消费端。
-stats/ 是探索工具模块，仅供 experiments/ 引用。
+signals/ 供 alpha、strategy、backtest、run 使用
+stats/ 仅供 experiments/ 引用
+experiments/ 和 run/ 是唯二不被引用的叶子节点
 ```
 
 ---
