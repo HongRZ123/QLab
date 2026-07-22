@@ -2,19 +2,6 @@
 
 均值回归策略的统计检验工具集。基于 Ernest P. Chan《Algorithmic Trading》Ch.2-3。
 
-> **架构迁移说明 (2026-07):** 统计检验原语 (`run_adf`, `hurst_exponent`, `estimate_half_life`,
-> `cadf_test`, `johansen_test` 等) 已迁移至 `signals/stats.py` 和 `signals/stats_cointegration.py`。
-> 原因是这些是"信号提取"函数——它们从价格中提取统计属性，本质上与
-> `signals/vpa.py` 的 `effort_vs_result()` 没有区别，只是消费方不同
-> (alpha 做截面筛选，strategy 做时序决策)。
->
-> **新代码请用**: `from signals.stats import run_adf, hurst_exponent, estimate_half_life`
-> **旧路径仍可用**: `from tests.s1_adf import run_adf` (tests/__init__.py 向后兼容)
->
-> 各 s*.py 文件的 `__main__` 验证协议仍可通过 `python -m tests.sX_xxx` 运行。
->
-> 详见 signals/README.md。
-
 每个检验模块均包含**验证协议**（正控 + 负控），可直接运行 `python -m tests.sX_xxx` 验证。
 
 ---
@@ -44,8 +31,7 @@ $$\Delta y(t) = \lambda \, y(t-1) + \mu + \sum_{i=1}^{k} \alpha_i \, \Delta y(t-
 ### 接口
 
 ```python
-from signals.stats import run_adf  # 推荐
-# from tests.s1_adf import run_adf  # 旧路径仍可用
+from tests.s1_adf import run_adf
 
 result = run_adf(prices)  # prices: pd.Series
 # 返回 dict:
@@ -83,7 +69,7 @@ $$\langle |z(t+\tau) - z(t)|^2 \rangle \sim \tau^{2H}, \quad z = \ln(y)$$
 ### 接口
 
 ```python
-from signals.stats import hurst_exponent  # 推荐
+from tests.s2_hurst import hurst_exponent
 
 result = hurst_exponent(prices, max_lag=100)  # prices: pd.Series
 # 返回 dict:
@@ -124,7 +110,7 @@ $$t_{1/2} = -\frac{\ln 2}{\ln(1 + \lambda)}$$
 ### 接口
 
 ```python
-from signals.stats import estimate_half_life  # 推荐
+from tests.s3_half_life import estimate_half_life
 
 result = estimate_half_life(prices, use_log=True)  # prices: pd.Series
 # 返回 dict:
@@ -138,7 +124,7 @@ result = estimate_half_life(prices, use_log=True)  # prices: pd.Series
 ### 辅助函数
 
 ```python
-from signals.stats import generate_ou_paths, generate_gbm_paths  # 推荐
+from tests.s3_half_life import generate_ou_paths, generate_gbm_paths
 
 # 精确离散化 OU 过程 (正控)
 paths = generate_ou_paths(n_paths=100, n_steps=1000, theta=0.05, mu=0, sigma=1)
@@ -166,7 +152,7 @@ paths = generate_gbm_paths(n_paths=100, n_steps=1000, sigma=0.01)
 ### 接口
 
 ```python
-from signals.stats_cointegration import cadf_test, cadf_test_both_orders  # 推荐
+from tests.s5_cadf import cadf_test, cadf_test_both_orders
 
 # 单顺序
 result = cadf_test(y, x, lag=1)  # y, x: pd.Series
@@ -201,7 +187,7 @@ $$\Delta \mathbf{Y}(t) = \boldsymbol{\Lambda} \, \mathbf{Y}(t-1) + \mathbf{M} + 
 ### 接口
 
 ```python
-from signals.stats_cointegration import johansen_test, construct_portfolio  # 推荐
+from tests.s6_johansen import johansen_test, construct_portfolio
 
 # Johansen 检验
 result = johansen_test(prices_df, lag=1)  # prices_df: pd.DataFrame (T × n)
