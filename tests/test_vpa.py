@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from signals.Tech.vpa import (
+from signals.vpa import (
     volume_anomaly_sequence,
     volume_confirmation,
     wick_body_ratio,

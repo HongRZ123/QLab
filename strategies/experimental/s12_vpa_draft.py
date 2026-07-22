@@ -2,7 +2,7 @@
 s12_vpa_draft.py — VPA（量价分析）实验策略
 ==========================================
 
-基于 signals.Tech.vpa 的量价确认信号生成交易决策。
+基于 signals.vpa 的量价确认信号生成交易决策。
 
 信号逻辑:
 - volume_confirmation = +2（看涨确认）→ num_units = 1
@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 
 from backtest import run_backtest
-from signals.Tech.vpa import volume_confirmation, wick_body_ratio
+from signals.vpa import volume_confirmation, wick_body_ratio
 
 
 def vpa_strategy(

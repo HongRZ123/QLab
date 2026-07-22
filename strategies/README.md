@@ -69,17 +69,17 @@ result = run_strategy("linear_mr", prices)
 | S7 线性组合 MR | `strategies.MR.s7_linear_portfolio` | 多资产 | 价格矩阵 | ≥ 0 (连续) | ❌ |
 | S8 布林带 MR | `strategies.MR.s8_bollinger` | 单资产 | 价格序列 | {0, 1} | ✅ `bollinger_mr` |
 | S8 布林带组合 | `strategies.MR.s8_bollinger` | 组合 | 组合净值 | {0, 1} | ❌ |
-| S9 卡尔曼对冲 | `strategies.MR.s9_kalman_hedge` | 配对 | `signals.MR.kalman_spread` | {0, 1} | ❌ |
+| S9 卡尔曼对冲 | `strategies.MR.s9_kalman_hedge` | 配对 | `signals.kalman` | {0, 1} | ❌ |
 | S10 卡尔曼做市 | `strategies.MM.s10_kalman_mm` | 做市 | 价格+成交量 | 无信号 | ❌ |
 | MA Crossover | `strategies.Tech.ma_crossover` | 单资产 | 价格序列 | {0, 1} | ✅ `ma_crossover` |
 | RSI 草案 | `strategies.experimental.s11_rsi_draft` | 单资产 | 价格序列 | {0, 1} | ❌ (实验) |
-| VPA 草案 | `strategies.experimental.s12_vpa_draft` | 单资产 | `signals.Tech.vpa` | {0, 1} | ❌ (实验) |
+| VPA 草案 | `strategies.experimental.s12_vpa_draft` | 单资产 | `signals.vpa` | {0, 1} | ❌ (实验) |
 
 ## 依赖关系
 
 ```
-signals.MR.kalman_spread  ──-> strategies.MR.s9_kalman_hedge
-signals.Tech.vpa          ──-> strategies.experimental.s12_vpa_draft
+signals.kalman             ──-> strategies.MR.s9_kalman_hedge
+signals.vpa                ──-> strategies.experimental.s12_vpa_draft
 
 tests.s3_half_life  ──-> strategies.MR.s4_linear, s7_linear_portfolio, s8_bollinger (半衰期 -> lookback)
 tests.s6_johansen   ──-> strategies.MR.s7_linear_portfolio (验证协议中的协整序列生成)

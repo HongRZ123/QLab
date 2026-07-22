@@ -63,17 +63,15 @@ QLab/
 │   └── dividend.py        # 除权除息检测与复权
 │
 ├── signals/           # 信号层：从市场数据中提取的、独立于交易策略的信息
-│   ├── MR/                # 均值回归信号
-│   │   └── kalman_spread.py  # compute_kalman_spread()（卡尔曼滤波动态对冲比率）
-│   └── Tech/             # 技术分析信号
-│       └── vpa.py            # volume_confirmation / wick_body_ratio / volume_anomaly_sequence
+│   ├── vpa.py             # 量价信号（volume_confirmation / wick_body_ratio / volume_anomaly_sequence）
+│   └── kalman.py          # 卡尔曼信号（compute_kalman_spread）
 │
 ├── strategies/        # 策略层：按 alpha 类型分类，消费信号生成 num_units
 │   ├── MR/                 # 均值回归策略
 │   │   ├── s4_linear.py        # S4 线性均值回归
 │   │   ├── s7_linear_portfolio.py  # S7 组合线性均值回归
 │   │   ├── s8_bollinger.py     # S8 布林带均值回归
-│   │   └── s9_kalman_hedge.py  # S9 卡尔曼动态对冲（委托 signals/MR/kalman_spread）
+│   │   └── s9_kalman_hedge.py  # S9 卡尔曼动态对冲（委托 signals/kalman）
 │   ├── MM/                 # 做市策略
 │   │   └── s10_kalman_mm.py    # S10 卡尔曼做市
 │   ├── Tech/               # 技术分析策略
@@ -132,10 +130,10 @@ data  ->  signals  ->  strategies  ->  backtest  ->  explore
 | MA Crossover | `strategies.Tech.ma_crossover` | 单资产 | 价格序列 | {0, 1} | ✅ 已注册 `ma_crossover` |
 | S7 线性组合 MR | `strategies.MR.s7_linear_portfolio` | 多资产 | 价格矩阵 | >= 0 (连续) | 📦 库代码 |
 | S8 布林带组合 | `strategies.MR.s8_bollinger` | 组合 | 组合净值 | {0, 1} | 📦 库代码 |
-| S9 卡尔曼对冲 | `strategies.MR.s9_kalman_hedge` | 配对 | `signals.MR.kalman_spread` | {0, 1} | 📦 库代码 |
+| S9 卡尔曼对冲 | `strategies.MR.s9_kalman_hedge` | 配对 | `signals.kalman` | {0, 1} | 📦 库代码 |
 | S10 卡尔曼做市 | `strategies.MM.s10_kalman_mm` | 做市 | 价格+成交量 | 无 num_units | 📦 库代码 |
 | RSI 草案 | `strategies.experimental.s11_rsi_draft` | 单资产 | 价格序列 | {0, 1} | 🧪 实验草稿 |
-| VPA 草案 | `strategies.experimental.s12_vpa_draft` | 单资产 | `signals.Tech.vpa` | {0, 1} | 🧪 实验草稿 |
+| VPA 草案 | `strategies.experimental.s12_vpa_draft` | 单资产 | `signals.vpa` | {0, 1} | 🧪 实验草稿 |
 
 **状态说明：**
 
@@ -149,10 +147,10 @@ data  ->  signals  ->  strategies  ->  backtest  ->  explore
 
 | 信号 | 模块 | 输出 | 消费者 |
 |------|------|------|--------|
-| 卡尔曼 spread | `signals.MR.kalman_spread` | beta_slope, e, sqrt_Q, spread | S9 |
-| 量价确认 | `signals.Tech.vpa` | +2/+1/-1/-2/0 编码 | S12 |
-| K 线影线比例 | `signals.Tech.vpa` | body_ratio, signal | S12 |
-| 量价背离序列 | `signals.Tech.vpa` | +1/-1/0 编码 | S12 |
+| 卡尔曼 spread | `signals.kalman` | beta_slope, e, sqrt_Q, spread | S9 |
+| 量价确认 | `signals.vpa` | +2/+1/-1/-2/0 编码 | S12 |
+| K 线影线比例 | `signals.vpa` | body_ratio, signal | S12 |
+| 量价背离序列 | `signals.vpa` | +1/-1/0 编码 | S12 |
 
 > 信号只做信息提取，不输出 `num_units`。Z-score 是策略逻辑，不是信号。
 
@@ -227,7 +225,7 @@ constraints.py       core.py            engine.py
 ```bash
 python -m backtest.engine
 python -m backtest.core
-python -m signals.Tech.vpa
+python -m signals.vpa
 python -m strategies.MR.s4_linear
 python -m strategies.MR.s9_kalman_hedge
 python -m tests.s6_johansen
@@ -243,7 +241,7 @@ python -m tests.s6_johansen
 | `backtest.metrics` | `python -m backtest.metrics` |
 | `backtest.walk_forward` | `python -m backtest.walk_forward` |
 | `data.dividend` | `python -m data.dividend` |
-| `signals.Tech.vpa` | `python -m signals.Tech.vpa` |
+| `signals.vpa` | `python -m signals.vpa` |
 | `strategies.MR.s4_linear` | `python -m strategies.MR.s4_linear` |
 | `strategies.MR.s7_linear_portfolio` | `python -m strategies.MR.s7_linear_portfolio` |
 | `strategies.MR.s8_bollinger` | `python -m strategies.MR.s8_bollinger` |
@@ -369,8 +367,8 @@ codes = source.list_symbols("sh")   # 同 list_symbols
 ### signals（信号层）
 
 ```python
-from signals.MR.kalman_spread import compute_kalman_spread
-from signals.Tech.vpa import volume_confirmation, wick_body_ratio, volume_anomaly_sequence
+from signals.kalman import compute_kalman_spread
+from signals.vpa import volume_confirmation, wick_body_ratio, volume_anomaly_sequence
 
 # 卡尔曼 spread 信号
 sig = compute_kalman_spread(x, y, delta=0.0001, ve=0.001)
@@ -476,14 +474,14 @@ result = run_core(
 
 #### 1. 放在哪里
 
-按**生成视角**分类，放在 `signals/` 对应子目录：
+按**技术概念**命名，放在 `signals/` 下一个 `.py` 文件中：
 
-| 视角 | 目录 | 示例 |
+| 文件 | 内容 | 示例 |
 |------|------|------|
-| 均值回归 | `signals/MR/` | `kalman_spread.py` |
-| 技术分析 | `signals/Tech/` | `vpa.py` |
+| `signals/vpa.py` | 量价分析信号 | `volume_confirmation`, `wick_body_ratio` |
+| `signals/kalman.py` | 卡尔曼滤波信号 | `compute_kalman_spread` |
 
-如果是新的视角（如宏观、情绪），新建 `signals/<视角名>/` 目录 + `__init__.py`。
+如果是新的技术概念，新建 `signals/<概念名>.py`。一个文件内可放多个相关信号函数。
 
 #### 2. 函数签名要求
 
@@ -517,12 +515,12 @@ def run_validation() -> bool:
     return all_passed
 ```
 
-运行方式：`python -m signals.MR.my_signal`
+运行方式：`python -m signals.my_signal`
 
 #### 4. 更新文档
 
 - 在本 README [已有模块清单 > 信号](#信号) 表格中添加一行
-- 在对应子目录的 `README.md` 中添加信号说明（公式、接口、返回值、用法）
+- 在 `signals/README.md` 中添加信号说明（公式、接口、返回值、用法）
 
 ---
 
@@ -637,7 +635,7 @@ class MyCost:
 - [data/README.md](data/README.md)
 - [tests/README.md](tests/README.md)
 - [strategies/README.md](strategies/README.md) -- [MR/](strategies/MR/README.md) | [MM/](strategies/MM/README.md) | [Tech/](strategies/Tech/README.md)
-- [signals/MR/README.md](signals/MR/README.md) | [signals/Tech/README.md](signals/Tech/README.md)
+- [signals/README.md](signals/README.md)
 - [backtest/README.md](backtest/README.md)
 - [explore/README.md](explore/README.md)
 - [experiments/README.md](experiments/README.md)

@@ -40,7 +40,7 @@ PnL 计算 (动态对冲):
 
 import numpy as np
 
-from signals.MR.kalman_spread import compute_kalman_spread
+from signals.kalman import compute_kalman_spread
 
 # ============================================================
 # 核心函数
