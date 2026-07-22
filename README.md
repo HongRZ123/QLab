@@ -66,7 +66,9 @@ QLab/
 │   ├── vpa.py             # 量价信号（effort_vs_result / stopping_volume / ...）
 │   ├── pivot.py           # 价格结构信号（支点、震荡区间、突破检测）
 │   ├── trend.py           # 趋势健康度信号
-│   └── kalman.py          # 卡尔曼信号（compute_kalman_spread）
+│   ├── kalman.py          # 卡尔曼信号（compute_kalman_spread）
+│   ├── stats.py           # 统计信号（ADF / Hurst / 半衰期）
+│   └── stats_cointegration.py  # 协整信号（CADF / Johansen）
 │
 ├── strategies/        # 策略层：按 alpha 类型分类，消费信号生成 num_units
 │   ├── MR/                 # 均值回归策略
@@ -105,7 +107,7 @@ QLab/
 │   ├── test_data_interface.py       # OHLCVSource 协议测试
 │   └── test_tdx_source.py           # TDXSource 测试
 │
-├── stats/             # 统计分析工具：ADF/Hurst/CADF/Johansen（稳定模块，可被引用）
+├── stats/             # 统计探索工具（scan.py，仅供 experiments/ 引用）
 ├── experiments/       # 自由探索脚本（独立运行，不被任何模块引用）
 ├── run/               # 策略端到端入口（独立运行，不被任何模块引用）
 ├── alpha/             # 标的选取层：平稳性/动量/协整筛选 + ETF 宇宙
@@ -120,7 +122,7 @@ data  ->  signals  ->  strategies  ->  backtest
                                            ->  run/
 
 experiments/ 和 run/ 是仅有的两个不被任何模块引用的纯消费端。
-stats/ 是稳定的统计工具模块，被 alpha、strategies、backtest 等引用。
+stats/ 是探索工具模块，仅供 experiments/ 引用。
 ```
 
 ---
@@ -172,17 +174,17 @@ stats/ 是稳定的统计工具模块，被 alpha、strategies、backtest 等引
 | 突破检测 | `signals/pivot` | confirmed/false_breakout | VPA-T3 |
 | 卡尔曼 spread | `signals/kalman` | beta, e, sqrt_Q | S9 |
 
-> 信号只做信息提取，不输出 `num_units`。统计检验 (ADF/Hurst/CADF/Johansen) 在 `stats/` 模块。
+> 信号只做信息提取，不输出 `num_units`。统计检验和路径生成器也在 `signals/stats.py` 中。
 
 ### 统计检验
 
 | 检验 | 模块 | 用途 |
 |------|------|------|
-| ADF | `stats/univariate.py` | 平稳性检验 |
-| Hurst | `stats/univariate.py` | 均值回归 vs 趋势判定 |
-| 半衰期 | `stats/univariate.py` | 均值回归速度 -> lookback 参数 |
-| CADF | `stats/cointegration.py` | 配对交易对冲比率 |
-| Johansen | `stats/cointegration.py` | 多资产协整组合 |
+| ADF | `signals/stats.py` | 平稳性检验 |
+| Hurst | `signals/stats.py` | 均值回归 vs 趋势判定 |
+| 半衰期 | `signals/stats.py` | 均值回归速度 -> lookback 参数 |
+| CADF | `signals/stats_cointegration.py` | 配对交易对冲比率 |
+| Johansen | `signals/stats_cointegration.py` | 多资产协整组合 |
 
 ---
 
@@ -261,7 +263,6 @@ python -m strategies.MR.s9_kalman_hedge
 | `backtest.core` | `python -m backtest.core` |
 | `backtest.constraints` | `python -m backtest.constraints` |
 | `backtest.metrics` | `python -m backtest.metrics` |
-| `backtest.walk_forward` | `python -m backtest.walk_forward` |
 | `data.dividend` | `python -m data.dividend` |
 | `signals.vpa` | `python -m signals.vpa` |
 | `signals.pivot` | `python -m signals.pivot` |
@@ -489,8 +490,8 @@ result = run_core(
 | `signals/pivot.py` | 价格结构信号 | `detect_isolated_pivots`, `detect_breakout` |
 | `signals/trend.py` | 趋势健康度信号 | `trend_health`, `trend_direction` |
 | `signals/kalman.py` | 卡尔曼滤波信号 | `compute_kalman_spread` |
-| `stats/univariate.py` | 统计检验信号 | `run_adf`, `hurst_exponent`, `estimate_half_life` |
-| `stats/cointegration.py` | 协整检验信号 | `cadf_test`, `johansen_test` |
+| `signals/stats.py` | 统计检验信号 | `run_adf`, `hurst_exponent`, `estimate_half_life` |
+| `signals/stats_cointegration.py` | 协整检验信号 | `cadf_test`, `johansen_test` |
 
 如果是新的技术概念，新建 `signals/<概念名>.py`。一个文件内可放多个相关信号函数。
 
@@ -585,7 +586,7 @@ def run_validation() -> bool:
     return all_passed
 ```
 
-可参考 `strategies/MR/s4_linear.py` 的 `run_validation()` 实现。合成数据生成器在 `stats/univariate.py`（`generate_ou_paths`, `generate_gbm_paths`）。
+可参考 `strategies/MR/s4_linear.py` 的 `run_validation()` 实现。合成数据生成器在 `signals/stats.py`（`generate_ou_paths`, `generate_gbm_paths`）。
 
 运行方式：`python -m strategies.MR.my_strategy`
 

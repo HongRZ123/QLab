@@ -1,13 +1,9 @@
 # tests/ — 单元测试
 
-pytest 测试用例。统计检验原语 (ADF/Hurst/CADF/Johansen) 已迁移到 `stats/`。
+pytest 测试用例。
 
-> `from stats.univariate import run_adf, hurst_exponent, estimate_half_life`
-> `from stats.cointegration import cadf_test, johansen_test`
->
-> `signals/__init__.py` 和 `tests/__init__.py` 仍从 `stats/` 重导出以保持兼容。
->
-> 详见 `stats/README.md`。
+> 统计函数 (ADF/Hurst/CADF/Johansen) 在 `signals/stats.py` 和 `signals/stats_cointegration.py` 中。
+> `from signals.stats import run_adf, hurst_exponent, estimate_half_life`
 
 ## 测试文件
 

@@ -2,8 +2,6 @@
 
 从市场数据中提取的实时信息，供策略做交易决策。信号只做信息提取，不输出 `num_units`，不计算 PnL。
 
-> 统计性质信号 (ADF/Hurst/CADF/Johansen) 已迁移到 `stats/` 模块。`signals/__init__.py` 仍从 `stats/` 重导出以保持兼容。
-
 ## 设计原则
 
 - 信号函数是纯函数，无副作用
@@ -18,6 +16,8 @@
 | `pivot.py` | 价格结构 | `detect_isolated_pivots`, `detect_consolidation`, `detect_breakout` |
 | `trend.py` | 趋势状态 | `trend_direction`, `trend_health` |
 | `kalman.py` | 动态对冲 | `compute_kalman_spread` |
+| `stats.py` | 统计信号 | `run_adf`, `hurst_exponent`, `estimate_half_life`, `generate_ou_paths`, `generate_gbm_paths` |
+| `stats_cointegration.py` | 协整信号 | `cadf_test`, `johansen_test`, `construct_portfolio` |
 
 ## vpa.py — 量价分析 (Anna Coulling)
 
