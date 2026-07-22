@@ -1,120 +1,221 @@
-# strategies - 量化策略模块
+# strategies — 策略层
 
-按 alpha 寻找视角分类的策略集合。所有策略为**纯函数**，输入价格序列（或信号），输出含 `num_units` 的 dict。
+按 alpha 寻找视角分类的策略集合。所有策略为纯函数，输入价格或信号，输出含 `num_units` 的 dict。
 
-> **重要**: 策略内置的 `pnl`/`ret` 为**理论值**（无成本、无 T+1、无手数取整）。生产回测请使用 `backtest.run_backtest()`。
+> 策略内置的 `pnl`/`ret` 为理论值（无成本、无 T+1、无手数取整）。生产回测请使用 `backtest.run_backtest()`。
 
 ## 目录结构
 
 ```
 strategies/
-├── MR/                     # 均值回归策略（价格偏离均值后回归）
+├── MR/                     # 均值回归策略
 │   ├── s4_linear.py            # S4: 线性均值回归 (单资产)
-│   ├── s7_linear_portfolio.py  # S7: 线性均值回归 (组合)
+│   ├── s7_linear_portfolio.py  # S7: 组合均值回归
 │   ├── s8_bollinger.py         # S8: 布林带均值回归
-│   └── s9_kalman_hedge.py      # S9: 卡尔曼滤波动态对冲
-├── MM/                     # 做市策略（提供流动性赚价差）
-│   └── s10_kalman_mm.py        # S10: 卡尔曼做市模型
-├── Tech/                   # 技术分析策略（均线、量价等）
+│   └── s9_kalman_hedge.py      # S9: 卡尔曼动态对冲
+├── Tech/                   # 技术分析策略
 │   ├── ma_crossover.py         # MA 金叉死叉
-│   ├── vpa_trend.py            # VPA 量价确认趋势跟踪
-│   ├── vpa_reversal.py         # VPA 反转形态
+│   ├── vpa_trend.py            # VPA 量价趋势跟踪
+│   ├── vpa_reversal.py         # VPA 止损量反转
 │   └── vpa_breakout.py         # VPA 放量突破
-├── experimental/           # 实验策略（草稿，不保证稳定性）
-│   ├── s11_rsi_draft.py        # RSI 均值回归草案
-│   └── s12_vpa_draft.py        # VPA 量价分析草案
-├── registry.py             # 策略注册表
+├── MM/                     # 做市策略
+│   └── s10_kalman_mm.py        # S10: 卡尔曼做市
+├── experimental/           # 实验策略
+│   ├── s11_rsi_draft.py        # RSI 草案
+│   ├── s12_vpa_draft.py        # VPA 草案
+│   └── custom_strategy.py      # 自定义策略开发模板
+├── registry.py             # 策略目录索引
 └── __init__.py             # 公开 API
 ```
 
 ## 分类原则
 
-strategies/ 的子目录按 **alpha 寻找视角** 分类，与 signals/ 按**技术概念**组织不同：
+子目录按 **alpha 寻找视角** 分类，与 signals/ 按技术概念组织正交：
 
-| strategies/ 子目录 | alpha 类型 | 含义 |
-|---------------------|-----------|------|
+| 目录 | alpha 类型 | 含义 |
+|------|-----------|------|
 | `MR/` | 均值回归 | 价格偏离均衡后回归 |
-| `MM/` | 做市 | 提供流动性赚价差 |
 | `Tech/` | 技术分析 | 量价指标驱动 |
+| `MM/` | 做市 | 提供流动性赚价差 |
 
-一个 `signals/kalman` 信号可以被 `strategies/MR/` 的策略消费（做均值回归），也可以被 `strategies/MM/` 的策略消费（做市）。信号分类和策略分类是两个正交维度。
+## 策略总览
 
-## 公开 API
+| 策略 | 文件 | 类型 | 信号来源 | num_units | 入口 |
+|------|------|------|----------|-----------|------|
+| S4 线性 MR | `MR/s4_linear.py` | 单资产 | 价格序列 | ≥0 (连续) | `run/run_linear_mr.py` |
+| S7 组合 MR | `MR/s7_linear_portfolio.py` | 组合 | 价格矩阵 + Johansen | ≥0 (连续) | `run/run_linear_portfolio.py` |
+| S8 布林带 MR | `MR/s8_bollinger.py` | 单资产 | 价格序列 | {0,1} | `run/run_bollinger_mr.py` |
+| S9 卡尔曼对冲 | `MR/s9_kalman_hedge.py` | 配对 | `signals/kalman` | {0,1} | `run/run_kalman_hedge.py` |
+| MA 均线交叉 | `Tech/ma_crossover.py` | 单资产 | 价格序列 | {0,1} | `run/run_ma_crossover.py` |
+| VPA 趋势跟踪 | `Tech/vpa_trend.py` | 单资产 | `signals/vpa`+`trend` | {0,0.5,1} | `run/run_vpa_trend.py` |
+| VPA 止损量反转 | `Tech/vpa_reversal.py` | 单资产 | `signals/vpa` | {0,1} | `run/run_vpa_reversal.py` |
+| VPA 放量突破 | `Tech/vpa_breakout.py` | 单资产 | `signals/vpa` | {0,1} | `run/run_vpa_breakout.py` |
+| S10 卡尔曼做市 | `MM/s10_kalman_mm.py` | 做市 | 价格+成交量 | 无 num_units | (手写脚本) |
+| RSI 草案 | `experimental/s11_rsi_draft.py` | 单资产 | 价格序列 | {0,1} | 实验 |
+| VPA 草案 | `experimental/s12_vpa_draft.py` | 单资产 | `signals/vpa` | {0,1} | 实验 |
+
+---
+
+# 均值回归策略 (MR/)
+
+从价格偏离均值的回归行为中寻找 alpha。
+
+## S4 — 线性均值回归 `MR/s4_linear.py`
+
+Chan Ch.2 核心策略。计算价格的 Z-score，仅做多：Z 为负时建仓，Z 归零时平仓。
+
+```
+Z(t) = (y(t) - MA(y, L)) / Std(y, L)
+num_units(t) = max(0, -Z(t))
+```
 
 ```python
-from strategies import (
-    linear_mr,           # S4  -> strategies.MR.s4_linear
-    linear_portfolio,    # S7  -> strategies.MR.s7_linear_portfolio
-    bollinger_mr,        # S8  -> strategies.MR.s8_bollinger
-    bollinger_portfolio, # S8 组合封装
-    kalman_hedge,        # S9  -> strategies.MR.s9_kalman_hedge
-    kalman_mm,           # S10 -> strategies.MM.s10_kalman_mm
-    ma_crossover,        # MA  -> strategies.Tech.ma_crossover
-)
-
-# 通过注册表
-from strategies.registry import list_names
-print(list_names())
-# 端到端运行: python run/run_linear_mr.py
+from strategies.MR.s4_linear import linear_mr
+result = linear_mr(prices, lookback=20)
+# returns: z_score, num_units, mkt_val, pnl, ret, lookback_used
 ```
 
-## 各子模块详细文档
+## S7 — 线性组合均值回归 `MR/s7_linear_portfolio.py`
 
-- [MR/README.md](MR/README.md) -- 均值回归策略（S4, S7, S8, S9）
-- [MM/README.md](MM/README.md) -- 做市策略（S10）
-- [Tech/README.md](Tech/README.md) -- 技术分析策略（MA Crossover, VPA）
-
-## 策略清单
-
-| 策略 | 模块 | 类型 | 信号来源 | num_units | 注册表 |
-|------|------|------|----------|-----------|--------|
-| S4 线性均值回归 | `strategies.MR.s4_linear` | 单资产 | 价格序列 | ≥ 0 (连续) | ✅ `linear_mr` |
-| S7 线性组合 MR | `strategies.MR.s7_linear_portfolio` | 多资产 | 价格矩阵 | ≥ 0 (连续) | ❌ |
-| S8 布林带 MR | `strategies.MR.s8_bollinger` | 单资产 | 价格序列 | {0, 1} | ✅ `bollinger_mr` |
-| S8 布林带组合 | `strategies.MR.s8_bollinger` | 组合 | 组合净值 | {0, 1} | ❌ |
-| S9 卡尔曼对冲 | `strategies.MR.s9_kalman_hedge` | 配对 | `signals.kalman` | {0, 1} | ❌ |
-| S10 卡尔曼做市 | `strategies.MM.s10_kalman_mm` | 做市 | 价格+成交量 | 无信号 | ❌ |
-| MA Crossover | `strategies.Tech.ma_crossover` | 单资产 | 价格序列 | {0, 1} | ✅ `ma_crossover` |
-| VPA 趋势跟踪 | `strategies.Tech.vpa_trend` | 单资产 | `signals.vpa` + `signals.trend` | {0, 0.5, 1} | ✅ `vpa_trend` |
-| VPA 反转形态 | `strategies.Tech.vpa_reversal` | 单资产 | `signals.vpa` | {0, 1} | ✅ `vpa_reversal` |
-| VPA 放量突破 | `strategies.Tech.vpa_breakout` | 单资产 | `signals.pivot` | {0, 1} | ✅ `vpa_breakout` |
-| RSI 草案 | `strategies.experimental.s11_rsi_draft` | 单资产 | 价格序列 | {0, 1} | ❌ (实验) |
-| VPA 草案 | `strategies.experimental.s12_vpa_draft` | 单资产 | `signals.vpa` | {0, 1} | ❌ (实验) |
-
-## 依赖关系
+S4 的多资产版本。用 Johansen 特征向量构造协整组合 yport，对 yport 做 Z-score MR。
 
 ```
-signals.kalman             ──-> strategies.MR.s9_kalman_hedge
-signals.vpa                ──-> strategies.Tech.vpa_trend
-signals.vpa                ──-> strategies.Tech.vpa_reversal
-signals.vpa                ──-> strategies.experimental.s12_vpa_draft
-signals.pivot              ──-> strategies.Tech.vpa_breakout
-
-tests.s3_half_life  ──-> strategies.MR.s4_linear, s7_linear_portfolio, s8_bollinger (半衰期 -> lookback)
-tests.s6_johansen   ──-> strategies.MR.s7_linear_portfolio (验证协议中的协整序列生成)
+yport = Y · v₁
+Z(t) = (yport(t) - MA(yport, L)) / Std(yport, L)
+num_units(t) = max(0, -Z(t))
 ```
+
+```python
+from strategies.MR.s7_linear_portfolio import linear_portfolio
+result = linear_portfolio(prices_df, eigenvector, lookback=20)
+# returns: yport, z_score, num_units, positions, pnl, ret
+```
+
+## S8 — 布林带均值回归 `MR/s8_bollinger.py`
+
+离散信号版 MR。价格跌破下轨买入，回到均值卖出。
+
+```
+Z(t) = (y(t) - MA(y, L)) / Std(y, L)
+Z < -entry_z  -> num_units = 1
+Z >= -exit_z  -> num_units = 0
+```
+
+```python
+from strategies.MR.s8_bollinger import bollinger_mr
+result = bollinger_mr(prices, lookback=20, entry_z=1.0, exit_z=0.0)
+# returns: z_score, num_units, signals, pnl, ret, n_trades, avg_holding
+```
+
+## S9 — 卡尔曼动态对冲 `MR/s9_kalman_hedge.py`
+
+Chan Ch.3 Box 3.1。卡尔曼滤波估计动态对冲比率 β(t)，以预测误差 e(t) 构造信号。
+
+```
+e(t) < -√Q(t) -> num_units = 1 (买入)
+e(t) > -√Q(t) -> num_units = 0 (卖出)
+```
+
+信号提取委托给 `signals/kalman.py`，策略层只保留交易规则和 PnL。
+
+```python
+from strategies.MR.s9_kalman_hedge import kalman_hedge
+result = kalman_hedge(y, x, burn_in=60)
+# returns: beta_slope, e, Q, sqrt_Q, spread, num_units, pnl, ret
+```
+
+---
+
+# 技术分析策略 (Tech/)
+
+不依赖统计假设，直接从量价数据中提取交易信号。
+
+## MA Crossover — 均线金叉死叉 `Tech/ma_crossover.py`
+
+```
+SMA_short 上穿 SMA_long -> num_units = 1
+SMA_short 下穿 SMA_long -> num_units = 0
+```
+
+```python
+from strategies.Tech.ma_crossover import ma_crossover
+result = ma_crossover(prices, short_window=5, long_window=20)
+```
+
+## VPA Trend — 量价趋势跟踪 `Tech/vpa_trend.py`
+
+基于 Anna Coulling 方法论。`effort_vs_result`（成交量/振幅比）判断量价和谐度，配合上下文感知的 `trend_health` 决定仓位。
+
+```
+effort_vs_result ≈ 1 (确认) + trend_health = +1 -> full (1.0)
+effort_vs_result ≈ 1 + trend_health = -1          -> half (0.5)
+anomaly or trap                                    -> empty (0.0)
+```
+
+```python
+from strategies.Tech.vpa_trend import vpa_trend
+result = vpa_trend(ohlcv, lookback=20, confirm_low=0.7, confirm_high=1.5)
+# returns: num_units, effort_vs_result, trend_direction, trend_health
+```
+
+## VPA Reversal — 止损量反转 `Tech/vpa_reversal.py`
+
+捕捉底部反转。下跌趋势中出现高量锤头线（stopping volume）入场，forward-fill 持仓，
+买入高潮或跌破入场低点出场。
+
+```python
+from strategies.Tech.vpa_reversal import vpa_reversal
+result = vpa_reversal(ohlcv, lookback=20)
+# returns: num_units (forward-filled), stopping_volume, buying_climax
+```
+
+## VPA Breakout — 放量突破 `Tech/vpa_breakout.py`
+
+捕捉盘整区真突破。收盘突破近期高点 + 高量 + 大振幅入场，向量化实现。
+
+```python
+from strategies.Tech.vpa_breakout import vpa_breakout
+result = vpa_breakout(ohlcv, lookback=20, vol_threshold=1.5, spread_threshold=1.5)
+# returns: num_units (forward-filled), breakout_up, volume_relative, spread_relative
+```
+
+---
+
+# 做市策略 (MM/)
+
+## S10 — 卡尔曼做市 `MM/s10_kalman_mm.py`
+
+用卡尔曼滤波估计公允价值，在公允价值附近挂单提供流动性。不产出 `num_units`，
+输出 `fair_value` 和 `deviation`。
+
+```python
+from strategies.MM.s10_kalman_mm import kalman_mm
+result = kalman_mm(prices, volumes)
+# returns: fair_value, deviation (not num_units)
+```
+
+---
 
 ## 理论 PnL vs 生产回测
 
 | | 策略内置 PnL | backtest 引擎 PnL |
 |---|---|---|
 | T+1 执行 | ❌ | ✅ |
-| 手数取整 | ❌ 连续仓位 | ✅ round_to_lot |
+| 手数取整 | ❌ | ✅ round_to_lot |
 | 佣金/印花税/滑点 | ❌ | ✅ |
-| 用途 | 验证协议 (正控/负控) | 生产回测 |
 
-**正确用法**: 策略输出 `num_units` -> 传给 `backtest.run_backtest()` 做含成本的回测。
+**正确用法**: 策略输出 `num_units` → 传给 `backtest.run_backtest()`。
 
-## 验证协议
+## 验证
 
 ```bash
-python -m strategies.MR.s4_linear              # OU 正控 + GBM 负控
-python -m strategies.MR.s7_linear_portfolio     # 协整组合正控
-python -m strategies.MR.s8_bollinger           # OU 正控 + GBM 负控
-python -m strategies.MR.s9_kalman_hedge        # 线性关系 β 收敛 + 独立 GBM 负控
-python -m strategies.MM.s10_kalman_mm          # 恒定价格收敛 + 大单 K=1 + 小单 K≈0
-python -m strategies.Tech.ma_crossover         # 趋势序列交叉 + 恒定价格无交叉
-python -m strategies.Tech.vpa_trend            # 量价确认正控 + 随机游走负控
-python -m strategies.Tech.vpa_reversal         # 锤头线买入 + 随机游走稀疏信号
-python -m strategies.Tech.vpa_breakout         # 放量突破买入 + 缩量突破无信号
+python -m strategies.MR.s4_linear
+python -m strategies.MR.s7_linear_portfolio
+python -m strategies.MR.s8_bollinger
+python -m strategies.MR.s9_kalman_hedge
+python -m strategies.MM.s10_kalman_mm
+python -m strategies.Tech.ma_crossover
+python -m strategies.Tech.vpa_trend
+python -m strategies.Tech.vpa_reversal
+python -m strategies.Tech.vpa_breakout
 ```

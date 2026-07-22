@@ -423,7 +423,7 @@ print(list_names())
 result = linear_mr(prices, lookback=20)
 ```
 
-> 各子模块详细文档: [MR/README.md](strategies/MR/README.md) | [MM/README.md](strategies/MM/README.md) | [Tech/README.md](strategies/Tech/README.md)
+> 详见 [strategies/README.md](strategies/README.md)。
 
 ### backtest（回测层）
 
@@ -652,7 +652,7 @@ class MyCost:
 
 - [data/README.md](data/README.md)
 - [tests/README.md](tests/README.md)
-- [strategies/README.md](strategies/README.md) -- [MR/](strategies/MR/README.md) | [MM/](strategies/MM/README.md) | [Tech/](strategies/Tech/README.md)
+- [strategies/README.md](strategies/README.md)
 - [signals/README.md](signals/README.md)
 - [backtest/README.md](backtest/README.md)
 - [explore/README.md](explore/README.md)
