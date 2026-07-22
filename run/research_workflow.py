@@ -10,7 +10,7 @@ research_workflow.py - 完整研究工作流模板
     5. 汇总报告
 
 用法:
-    1. 复制此文件到项目根目录: cp templates/research_workflow.py my_workflow.py
+    1. 复制此文件到项目根目录: cp run/research_workflow.py my_workflow.py
     2. 修改下方 CONFIG 区域
     3. 运行: python my_workflow.py
 """

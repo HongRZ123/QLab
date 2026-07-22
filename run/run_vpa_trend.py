@@ -1,10 +1,10 @@
 """
-templates/run_vpa_trend.py 鈥?VPA 閲忎环瓒嬪娍璺熻釜 绔埌绔?==================================================
+run/run_vpa_trend.py 鈥?VPA 閲忎环瓒嬪娍璺熻釜 绔埌绔?==================================================
 
 data 鈫?alpha.defaults.get_trend_candidates() 鈫?signals.vpa.effort_vs_result 鈫?vpa_trend 鈫?backtest 鈫?output
 
 鐢ㄦ硶:
-    python templates/run_vpa_trend.py
+    python run/run_vpa_trend.py
 """
 from __future__ import annotations
 

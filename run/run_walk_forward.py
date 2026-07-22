@@ -1,5 +1,5 @@
 """
-run_strategy.py — 端到端集成运行器 (Walk-Forward 版)
+run_walk_forward.py — 端到端集成运行器 (Walk-Forward 版)
 ====================================================
 
 对 Phase 1 候选标的 (sh512670 银行ETF, sh512760 芯片ETF) 执行完整策略回测流程:

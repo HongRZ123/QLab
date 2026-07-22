@@ -1,11 +1,11 @@
 """
-templates/run_linear_mr.py 鈥?S4 绾挎€у潎鍊煎洖褰?绔埌绔?===================================================
+run/run_linear_mr.py -- S4 Linear MR end-to-end
 
 data 鈫?alpha.defaults.get_mr_candidates() 鈫?strategies.MR.s4_linear 鈫?backtest 鈫?output
 
 鐢ㄦ硶:
-    python templates/run_linear_mr.py
-    cp templates/run_linear_mr.py my_run.py && python my_run.py
+    python run/run_linear_mr.py
+    cp run/run_linear_mr.py my_run.py && python my_run.py
 """
 from __future__ import annotations
 

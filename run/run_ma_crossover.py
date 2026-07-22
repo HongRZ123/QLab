@@ -1,10 +1,10 @@
 """
-templates/run_ma_crossover.py 鈥?鍧囩嚎閲戝弶姝诲弶 绔埌绔?=================================================
+run/run_ma_crossover.py 鈥?鍧囩嚎閲戝弶姝诲弶 绔埌绔?=================================================
 
 data 鈫?alpha.defaults.get_trend_candidates() 鈫?strategies.Tech.ma_crossover 鈫?backtest 鈫?output
 
 鐢ㄦ硶:
-    python templates/run_ma_crossover.py
+    python run/run_ma_crossover.py
 """
 from __future__ import annotations
 

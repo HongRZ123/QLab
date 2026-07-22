@@ -1,10 +1,10 @@
 """
-templates/run_bollinger_mr.py 鈥?S8 甯冩灄甯﹀潎鍊煎洖褰?绔埌绔?=======================================================
+run/run_bollinger_mr.py 鈥?S8 甯冩灄甯﹀潎鍊煎洖褰?绔埌绔?=======================================================
 
 data 鈫?alpha.defaults.get_mr_candidates() 鈫?strategies.MR.s8_bollinger 鈫?backtest 鈫?output
 
 鐢ㄦ硶:
-    python templates/run_bollinger_mr.py
+    python run/run_bollinger_mr.py
 """
 from __future__ import annotations
 

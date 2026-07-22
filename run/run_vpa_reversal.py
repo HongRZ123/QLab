@@ -1,10 +1,10 @@
 """
-templates/run_vpa_reversal.py 鈥?VPA 姝㈡崯閲忓弽杞?绔埌绔?====================================================
+run/run_vpa_reversal.py 鈥?VPA 姝㈡崯閲忓弽杞?绔埌绔?====================================================
 
 data 鈫?alpha.defaults.get_trend_candidates() 鈫?signals.vpa.stopping_volume 鈫?vpa_reversal 鈫?backtest 鈫?output
 
 鐢ㄦ硶:
-    python templates/run_vpa_reversal.py
+    python run/run_vpa_reversal.py
 """
 from __future__ import annotations
 

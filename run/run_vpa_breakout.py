@@ -1,10 +1,10 @@
 """
-templates/run_vpa_breakout.py 鈥?VPA 鏀鹃噺绐佺牬 绔埌绔?==================================================
+run/run_vpa_breakout.py 鈥?VPA 鏀鹃噺绐佺牬 绔埌绔?==================================================
 
 data 鈫?alpha.defaults.get_trend_candidates() 鈫?signals.vpa.spread_relative 鈫?vpa_breakout 鈫?backtest 鈫?output
 
 鐢ㄦ硶:
-    python templates/run_vpa_breakout.py
+    python run/run_vpa_breakout.py
 """
 from __future__ import annotations
 

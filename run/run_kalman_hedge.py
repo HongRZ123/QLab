@@ -1,11 +1,11 @@
 """
-templates/run_kalman_hedge.py 鈥?S9 鍗″皵鏇煎姩鎬佸鍐?绔埌绔?========================================================
+run/run_kalman_hedge.py 鈥?S9 鍗″皵鏇煎姩鎬佸鍐?绔埌绔?========================================================
 
 data 鈫?alpha.defaults.get_pair_candidates() 鈫?CADF 鈫?kalman_hedge 鈫?backtest 鈫?output
 
 姣忓鏍囩殑鏄嫭绔嬬殑閰嶅浜ゆ槗: CADF 妫€楠?鈫?鍗″皵鏇兼护娉㈠姩鎬?尾 鈫?鐞嗚鏀剁泭鐜囥€?
 鐢ㄦ硶:
-    python templates/run_kalman_hedge.py
+    python run/run_kalman_hedge.py
 """
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def main() -> None:
     for sym_y, sym_x in pairs:
         print(f"\n  {sym_y} vs {sym_x}")
 
-        # data
+        # run/run_kalman_hedge.py -- S9 Kalman Hedge end-to-end
         y = read_day(sym_y)["close"]
         x = read_day(sym_x)["close"]
         common = y.index.intersection(x.index)

@@ -35,7 +35,7 @@ def main() -> None:
     symbols = get_universe("broad_etf")
     print(f"=== {STRATEGY_NAME} x {len(symbols)} symbols: {', '.join(symbols)}")
 
-    # data - load and align
+    # run/run_linear_portfolio.py -- S7 Portfolio MR end-to-end
     closes: dict[str, pd.Series] = {}
     for sym in symbols:
         closes[sym] = read_day(sym)["close"]

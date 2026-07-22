@@ -13,8 +13,8 @@ signals/stats_cointegration.py — 协整性质信号
 
 消费方:
     alpha/ (未来 cointegration.py)
-    explore/run_strategy.py
-    templates/run_pair_trade.py, run_portfolio.py
+run/run_walk_forward.py
+run/run_kalman_hedge.py, run_linear_portfolio.py
     strategies/MR/s7_linear_portfolio.py  (run_validation)
     backtest/walk_forward.py
 """

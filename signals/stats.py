@@ -16,7 +16,7 @@ signals/stats.py — 统计性质信号
     alpha/stationarity.py  — 平稳性评分 + 筛选
     explore/scan_*         — 全市场扫描
     strategies/MR/*        — run_validation() 正控/负控
-    templates/*            — 端到端研究脚本
+    run/run_*            — 端到端研究脚本
 """
 
 import numpy as np
