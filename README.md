@@ -90,8 +90,7 @@ QLab/
 │   ├── core.py             # run_core() 纯 Chan PnL 循环（零 A 股逻辑）
 │   ├── constraints.py      # Constraint/CostModel 协议 + PriceLimits/SuspensionCheck/AShareCost
 │   ├── engine.py           # run_backtest() 薄封装（创建约束+成本 -> 委托 run_core）
-│   ├── metrics.py          # 绩效指标（Sharpe, 最大回撤等）
-│   └── walk_forward.py     # Walk-Forward 分析
+│   └── metrics.py          # 绩效指标（Sharpe, 最大回撤等）
 │
 ├── tests/             # 检验层：pytest 单元测试
 │   ├── test_engine_snapshot.py      # 引擎快照测试（6 场景）
@@ -123,8 +122,6 @@ data  ->  signals  ->  strategies  ->  backtest
 experiments/ 和 run/ 是仅有的两个不被任何模块引用的纯消费端。
 stats/ 是稳定的统计工具模块，被 alpha、strategies、backtest 等引用。
 ```
-
-导入方向（回测层内部）：`constraints.py ← core.py ← engine.py`
 
 ---
 
@@ -256,7 +253,7 @@ python -m strategies.MR.s4_linear
 python -m strategies.MR.s9_kalman_hedge
 ```
 
-目前 21/21 全部通过：
+目前 20/20 全部通过：
 
 | 模块 | `python -m` 命令 |
 |------|------------------|
@@ -425,14 +422,14 @@ result = linear_mr(prices, lookback=20)
 
 ```python
 from backtest import run_backtest, run_backtest_long_only, performance_summary
-from backtest import walk_forward_linear_mr, walk_forward_bollinger, walk_forward_portfolio
 
 # A 股回测（含 T+1、涨跌停、停牌、佣金、印花税、滑点）
 bt = run_backtest(prices, num_units, dynamic_sizing=True)
 stats = performance_summary(bt["ret"])
 # stats = {apr, sharpe, maxdd, win_rate, trade_count, avg_holding, n_days}
 
-# Walk-Forward
+# Walk-Forward（参数估计在 run/run_walk_forward.py 中）
+from run.run_walk_forward import walk_forward_linear_mr
 wf = walk_forward_linear_mr(prices, reest_interval=63, min_warmup=252)
 bt_wf = run_backtest(prices, wf["num_units"])
 ```
@@ -663,5 +660,5 @@ class MyCost:
 
 - `ruff check .`：0 errors
 - `basedpyright`：0 errors, 1180 warnings（主要来自 pandas-stubs 类型桩不完整）
-- 21/21 `run_validation()` 通过
+- 20/20 `run_validation()` 通过
 - 109/109 pytest 测试全部通过

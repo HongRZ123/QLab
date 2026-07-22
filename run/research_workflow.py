@@ -28,9 +28,9 @@ import pandas as pd
 
 from backtest.engine import run_backtest
 from backtest.metrics import performance_summary
-from backtest.walk_forward import walk_forward_bollinger, walk_forward_linear_mr
 from data.dividend import adjust_close_prices, detect_ex_dividend
 from data.fetcher import read_day
+from run.run_walk_forward import walk_forward_bollinger, walk_forward_linear_mr
 from stats.univariate import estimate_half_life, hurst_exponent, run_adf
 from strategies.registry import list_names
 

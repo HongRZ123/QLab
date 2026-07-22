@@ -34,11 +34,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from backtest.engine import run_backtest
 from backtest.metrics import performance_summary
-from backtest.walk_forward import (
-    walk_forward_bollinger,
-    walk_forward_linear_mr,
-    walk_forward_portfolio,
-)
 from data.dividend import adjust_close_prices, detect_ex_dividend
 from data.fetcher import read_day
 from strategies import kalman_hedge
@@ -89,6 +84,127 @@ def _make_row(
         "n_trades": perf["trade_count"],
         "avg_holding": perf["avg_holding"],
     }
+
+
+# ============================================================
+# Walk-Forward 参数估计函数 (从 backtest/walk_forward.py 迁入)
+# ============================================================
+
+def _wf_sharpe(ret: pd.Series) -> float:
+    r = ret.dropna()
+    if len(r) < 10 or r.std() < 1e-12:
+        return 0.0
+    return float(r.mean() / r.std() * np.sqrt(252))
+
+
+def _wf_estimate_lookback(close: pd.Series, use_log: bool = True) -> int | None:
+    from signals.stats import estimate_half_life
+    hl_res = estimate_half_life(close, use_log=use_log)
+    hl = hl_res["half_life"]
+    lam = hl_res["lambda"]
+    if lam < 0 and 2 <= hl <= 252:
+        return round(hl)
+    return None
+
+
+def walk_forward_linear_mr(
+    close: pd.Series,
+    reest_interval: int = 63,
+    min_warmup: int = 252,
+) -> dict:
+    from signals.stats import estimate_half_life
+
+    from strategies.MR.s4_linear import linear_mr
+    n = len(close)
+    num_units = pd.Series(0.0, index=close.index, name="num_units")
+    lookback_log: list[dict] = []
+    for t in range(min_warmup, n, reest_interval):
+        lb = _wf_estimate_lookback(close.iloc[:t], use_log=True)
+        end = min(t + reest_interval, n)
+        if lb is None:
+            lookback_log.append({"date": close.index[t], "lookback": None, "half_life": estimate_half_life(close.iloc[:t])["half_life"]})
+            continue
+        start = max(0, t - lb + 1)
+        segment = close.iloc[start:end]
+        s4 = linear_mr(segment, lookback=lb)
+        offset = t - start
+        num_units.iloc[t:end] = s4["num_units"].values[offset:]
+        lookback_log.append({"date": close.index[t], "lookback": lb, "half_life": estimate_half_life(close.iloc[:t])["half_life"]})
+    return {"num_units": num_units, "lookback_log": lookback_log}
+
+
+def walk_forward_bollinger(
+    close: pd.Series,
+    entry_z_candidates: list[float] | None = None,
+    reest_interval: int = 63,
+    min_warmup: int = 252,
+) -> dict:
+    if entry_z_candidates is None:
+        entry_z_candidates = [1.0, 1.5, 2.0]
+    from strategies.MR.s8_bollinger import bollinger_mr
+    n = len(close)
+    num_units = pd.Series(0.0, index=close.index, name="num_units")
+    param_log: list[dict] = []
+    for t in range(min_warmup, n, reest_interval):
+        train = close.iloc[:t]
+        lb = _wf_estimate_lookback(train, use_log=True)
+        end = min(t + reest_interval, n)
+        if lb is None:
+            param_log.append({"date": close.index[t], "lookback": None, "entry_z": None, "train_sharpe": None})
+            continue
+        best_ez = entry_z_candidates[0]
+        best_sr = -np.inf
+        for ez in entry_z_candidates:
+            s8_train = bollinger_mr(train, lookback=lb, entry_z=ez, exit_z=0.0)
+            sr = _wf_sharpe(s8_train["ret"])
+            if sr > best_sr:
+                best_sr = sr
+                best_ez = ez
+        start = max(0, t - lb + 1)
+        segment = close.iloc[start:end]
+        s8 = bollinger_mr(segment, lookback=lb, entry_z=best_ez, exit_z=0.0)
+        offset = t - start
+        num_units.iloc[t:end] = s8["num_units"].values[offset:]
+        param_log.append({"date": close.index[t], "lookback": lb, "entry_z": best_ez, "train_sharpe": best_sr})
+    return {"num_units": num_units, "param_log": param_log}
+
+
+def walk_forward_portfolio(
+    prices_df: pd.DataFrame,
+    reest_interval: int = 63,
+    min_warmup: int = 252,
+    lag: int = 1,
+) -> dict:
+    from signals.stats_cointegration import johansen_test
+
+    from strategies.MR.s7_linear_portfolio import linear_portfolio
+    n = len(prices_df)
+    num_units = pd.Series(0.0, index=prices_df.index, name="num_units")
+    ret = pd.Series(0.0, index=prices_df.index, name="ret")
+    param_log: list[dict] = []
+    for t in range(min_warmup, n, reest_interval):
+        train = prices_df.iloc[:t]
+        log_train = np.log(train)
+        try:
+            jres = johansen_test(log_train, lag=lag)
+        except Exception:
+            param_log.append({"date": prices_df.index[t], "lookback": None, "half_life": None, "eigenvector": None, "rank": None})
+            continue
+        if not jres["is_cointegrated"] or jres["rank"] < 1:
+            param_log.append({"date": prices_df.index[t], "lookback": None, "half_life": jres["half_life"], "eigenvector": None, "rank": jres["rank"]})
+            continue
+        v1 = jres["eigenvectors"][:, 0]
+        hl = jres["half_life"]
+        lb = round(hl) if np.isfinite(hl) and 2 <= hl <= 252 else 20
+        end = min(t + reest_interval, n)
+        start = max(0, t - lb + 1)
+        segment = prices_df.iloc[start:end]
+        s7 = linear_portfolio(segment, v1, lookback=lb)
+        offset = t - start
+        num_units.iloc[t:end] = s7["num_units"].values[offset:]
+        ret.iloc[t:end] = s7["ret"].values[offset:]
+        param_log.append({"date": prices_df.index[t], "lookback": lb, "half_life": hl, "eigenvector": v1.copy(), "rank": jres["rank"]})
+    return {"num_units": num_units, "ret": ret, "param_log": param_log}
 
 
 # ============================================================
