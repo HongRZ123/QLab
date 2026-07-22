@@ -106,18 +106,18 @@ QLab/
 │   ├── test_data_interface.py       # OHLCVSource 协议测试
 │   └── test_tdx_source.py           # TDXSource 测试
 │
-├── stats/             # 统计分析层：ADF/Hurst/半衰期、CADF/Johansen、全市场扫描
+├── stats/             # 统计分析层：ADF/Hurst/半衰期/CADF/Johansen、全市场扫描
 ├── experiments/       # 实验层：完全独立的研究脚本
 ├── run/               # 执行层：每个策略的端到端入口
-├── alpha/             # 标的选取层：ETF 宇宙、平稳性筛选
+├── alpha/             # 标的选取层：平稳性/动量/协整筛选 + ETF 宇宙
 ```
 
 ### 模块依赖（单向，无循环）
 
 ```
-data  ->  signals  ->  strategies  ->  backtest  ->  explore/
-       ->  tests    ->  explore/                ->  run/
-       ->  alpha   ->  run/
+data  ->  signals  ->  strategies  ->  backtest  ->  run/
+       ->  stats    ->  alpha      ->  run/
+       ->  stats    ->  explore/
 ```
 
 导入方向（回测层内部）：`constraints.py ← core.py ← engine.py`
@@ -128,46 +128,50 @@ data  ->  signals  ->  strategies  ->  backtest  ->  explore/
 
 ### 策略
 
-| 策略 | 模块 | 类型 | 信号来源 | num_units | 状态 |
+| 策略 | 模块 | 类型 | 信号来源 | num_units | 入口 |
 |------|------|------|----------|-----------|------|
-| S4 线性均值回归 | `strategies.MR.s4_linear` | 单资产 | 价格序列 | >= 0 (连续) | ✅ 已注册 `linear_mr` |
-| S8 布林带 MR | `strategies.MR.s8_bollinger` | 单资产 | 价格序列 | {0, 1} | ✅ 已注册 `bollinger_mr` |
-| MA Crossover | `strategies.Tech.ma_crossover` | 单资产 | 价格序列 | {0, 1} | ✅ 已注册 `ma_crossover` |
-| VPA 趋势跟踪 | `strategies.Tech.vpa_trend` | 单资产 | `signals.vpa` + `signals.trend` | {0, 0.5, 1} | ✅ 已注册 `vpa_trend` |
-| VPA 反转形态 | `strategies.Tech.vpa_reversal` | 单资产 | `signals.vpa` | {0, 1} | ✅ 已注册 `vpa_reversal` |
-| VPA 放量突破 | `strategies.Tech.vpa_breakout` | 单资产 | `signals.pivot` | {0, 1} | ✅ 已注册 `vpa_breakout` |
-| S7 线性组合 MR | `strategies.MR.s7_linear_portfolio` | 多资产 | 价格矩阵 | >= 0 (连续) | 📦 库代码 |
-| S8 布林带组合 | `strategies.MR.s8_bollinger` | 组合 | 组合净值 | {0, 1} | 📦 库代码 |
-| S9 卡尔曼对冲 | `strategies.MR.s9_kalman_hedge` | 配对 | `signals.kalman` | {0, 1} | 📦 库代码 |
-| S10 卡尔曼做市 | `strategies.MM.s10_kalman_mm` | 做市 | 价格+成交量 | 无 num_units | 📦 库代码 |
-| RSI 草案 | `strategies.experimental.s11_rsi_draft` | 单资产 | 价格序列 | {0, 1} | 🧪 实验草稿 |
-| VPA 草案 | `strategies.experimental.s12_vpa_draft` | 单资产 | `signals.vpa` | {0, 1} | 🧪 实验草稿 |
+| S4 线性均值回归 | `strategies.MR.s4_linear` | 单资产 | 价格序列 | >= 0 (连续) | `run/run_linear_mr.py` |
+| S8 布林带 MR | `strategies.MR.s8_bollinger` | 单资产 | 价格序列 | {0, 1} | `run/run_bollinger_mr.py` |
+| MA Crossover | `strategies.Tech.ma_crossover` | 单资产 | 价格序列 | {0, 1} | `run/run_ma_crossover.py` |
+| VPA 趋势跟踪 | `strategies.Tech.vpa_trend` | 单资产 | `signals.vpa` + `signals.trend` | {0, 0.5, 1} | `run/run_vpa_trend.py` |
+| VPA 反转形态 | `strategies.Tech.vpa_reversal` | 单资产 | `signals.vpa` | {0, 1} | `run/run_vpa_reversal.py` |
+| VPA 放量突破 | `strategies.Tech.vpa_breakout` | 单资产 | `signals.vpa` | {0, 1} | `run/run_vpa_breakout.py` |
+| S7 线性组合 MR | `strategies.MR.s7_linear_portfolio` | 多资产 | 价格矩阵 + Johansen | >= 0 (连续) | `run/run_linear_portfolio.py` |
+| S9 卡尔曼对冲 | `strategies.MR.s9_kalman_hedge` | 配对 | `signals.kalman` | {0, 1} | `run/run_kalman_hedge.py` |
+| S10 卡尔曼做市 | `strategies.MM.s10_kalman_mm` | 做市 | 价格+成交量 | 无 num_units | (手写脚本) |
+| RSI 草案 | `strategies.experimental.s11_rsi_draft` | 单资产 | 价格序列 | {0, 1} | 实验 |
+| VPA 草案 | `strategies.experimental.s12_vpa_draft` | 单资产 | `signals.vpa` | {0, 1} | 实验 |
 
-**状态说明：**
-
-- ✅ **已注册** -- 已收录到 registry 目录索引，有 `run_validation()`，有 pytest，有 `run/run_*.py` 端到端入口
-- 📦 **库代码** -- 有 `run_validation()`，可直接 import 调用
-- 🧪 **实验草稿** -- 原型阶段
+**状态说明：** 所有策略均可通过 `run/run_*.py` 直接运行。S10 不产 `num_units`，通过手写脚本调用。
 
 > 所有策略仅做多。策略内置 PnL 为理论值（无成本、无 T+1），生产回测请用 `backtest.run_backtest()`。
 
 ### 信号
 
+#### 量价信号 (signals/vpa.py)
+
+| 信号 | 函数 | 输出 | 消费者 |
+|------|------|------|--------|
+| 成交量相对值 | `volume_relative(ohlcv)` | float Series | alpha, VPA |
+| 振幅 | `spread(ohlcv)` | float (high-low) | VPA |
+| 振幅相对值 | `spread_relative(ohlcv)` | float Series | VPA |
+| 投入产出比 | `effort_vs_result(ohlcv)` | float (≈1确认) | VPA-T1 |
+| 止损量 | `stopping_volume(ohlcv)` | bool | VPA-T2 |
+| 买入高潮 | `buying_climax(ohlcv)` | bool | VPA-T2 |
+| 无需求 | `no_demand(ohlcv)` | bool | VPA-T1 |
+| 无供应 | `no_supply(ohlcv)` | bool | VPA-T1 |
+
+#### 其他信号
+
 | 信号 | 模块 | 输出 | 消费者 |
 |------|------|------|--------|
-| 卡尔曼 spread | `signals.kalman` | beta_slope, e, sqrt_Q, spread | S9 |
-| 量价确认 | `signals.vpa` | +2/+1/-1/-2/0 编码 | S12 |
-| K 线影线比例 | `signals.vpa` | body_ratio, signal | S12 |
-| 量价背离序列 | `signals.vpa` | +1/-1/0 编码 | S12 |
-| 实体强度分位 | `signals.vpa` | 0~1 百分位 | VPA-T1 |
-| 成交量分位 | `signals.vpa` | 0~1 百分位 | VPA-T1/T2 |
-| 量价确认矩阵 | `signals.vpa` | confirmed/trap/anomaly/neutral | VPA-T1 |
-| 孤立支点 | `signals.pivot` | pivot_high, pivot_low | VPA-T3 |
-| 震荡区间 | `signals.pivot` | in_range/breakout_up/breakout_down | VPA-T3 |
-| 突破检测 | `signals.pivot` | breakout_confirmed/false_breakout | VPA-T3 |
-| 趋势健康度 | `signals.trend` | +1/-1/0 | VPA-T1 |
+| 趋势方向 | `signals/trend` | +1/-1/0 | VPA, alpha |
+| 趋势健康度 | `signals/trend` | +1/-1/0 | VPA |
+| 孤立支点 | `signals/pivot` | pivot_high/low | VPA-T3 |
+| 突破检测 | `signals/pivot` | confirmed/false_breakout | VPA-T3 |
+| 卡尔曼 spread | `signals/kalman` | beta, e, sqrt_Q | S9 |
 
-> 信号只做信息提取，不输出 `num_units`。Z-score 是策略逻辑，不是信号。
+> 信号只做信息提取，不输出 `num_units`。统计检验 (ADF/Hurst/CADF/Johansen) 在 `stats/` 模块。
 
 ### 统计检验
 
@@ -246,7 +250,6 @@ python -m signals.trend
 python -m strategies.Tech.vpa_trend
 python -m strategies.MR.s4_linear
 python -m strategies.MR.s9_kalman_hedge
-python -m tests.s6_johansen
 ```
 
 目前 21/21 全部通过：
@@ -272,8 +275,6 @@ python -m tests.s6_johansen
 | `strategies.Tech.vpa_reversal` | `python -m strategies.Tech.vpa_reversal` |
 | `strategies.Tech.vpa_breakout` | `python -m strategies.Tech.vpa_breakout` |
 | `strategies.experimental.s12_vpa_draft` | `python -m strategies.experimental.s12_vpa_draft` |
-| `tests.s3_half_life` | `python -m stats.univariate` |
-| `tests.s6_johansen` | `python -m tests.s6_johansen` |
 
 ---
 
@@ -300,9 +301,7 @@ bt = run_backtest(prices, result["num_units"], dynamic_sizing=True)
 stats = performance_summary(bt["ret"])
 ```
 
-### 方式三：Python 脚本调用库代码策略
-
-库代码策略（S7/S9/S10）未注册到 registry，需直接 import 调用：
+### 方式三：Python 脚本调用策略
 
 ```python
 # S9 配对交易
@@ -315,7 +314,7 @@ from stats.cointegration import johansen_test
 joh = johansen_test(prices_df)
 result = linear_portfolio(prices_df, joh["eigenvectors"][:, 0])
 
-# S10 卡尔曼做市（注意：不产出 num_units，只输出 fair_value/deviation）
+# S10 卡尔曼做市（不产出 num_units，输出 fair_value/deviation）
 from strategies.MM.s10_kalman_mm import kalman_mm
 result = kalman_mm(prices, volumes)
 ```
@@ -362,42 +361,38 @@ codes = source.list_symbols("sh")   # 同 list_symbols
 ```python
 from signals.kalman import compute_kalman_spread
 from signals.vpa import (
-    volume_confirmation, wick_body_ratio, volume_anomaly_sequence,
-    body_strength_percentile, volume_percentile, vpa_confirmation_matrix,
+    volume_relative, spread, spread_relative,
+    upper_wick, lower_wick, wick_ratio,
+    effort_vs_result, stopping_volume, buying_climax,
+    no_demand, no_supply,
 )
+from signals.trend import trend_direction, trend_health
 from signals.pivot import detect_isolated_pivots, detect_consolidation, detect_breakout
-from signals.trend import trend_health
 
-# 卡尔曼 spread 信号
+# 卡尔曼 spread
 sig = compute_kalman_spread(x, y, delta=0.0001, ve=0.001)
 # -> {beta_slope, beta_intercept, e, Q, sqrt_Q, spread}
 
-# VPA 量价信号
-vc = volume_confirmation(prices, volume, lookback=20)       # -> int Series (+2/+1/-1/-2/0)
-wbr = wick_body_ratio(open, high, low, close)               # -> DataFrame[body_ratio, upper/lower_wick_ratio, signal]
-vas = volume_anomaly_sequence(prices, volume, lookback=3)   # -> int Series (+1/-1/0)
-bsp = body_strength_percentile(open, close, lookback=20)    # -> float Series (0~1)
-vps = volume_percentile(volume, lookback=20)                # -> float Series (0~1)
-vcm = vpa_confirmation_matrix(open, high, low, close, volume, lookback=20)
-# -> DataFrame[confirmed, trap, anomaly, neutral]
+# VPA 核心信号
+evr = effort_vs_result(ohlcv)       # 投入产出比 (≈1=确认, >>1=异常)
+sv = stopping_volume(ohlcv)         # 止损量 (底部反转)
+bc = buying_climax(ohlcv)           # 买入高潮 (顶部反转)
+nd = no_demand(ohlcv)               # 无需求 (弱势反弹)
+ns = no_supply(ohlcv)               # 无供应 (强势回撤)
 
-# 价格结构信号
-pivots = detect_isolated_pivots(high, low, left=5, right=5) # -> DataFrame[pivot_high, pivot_low]
-cons = detect_consolidation(high, low, lookback=20)         # -> Series[bool]
-brk = detect_breakout(close, high, low, lookback=20)        # -> DataFrame[breakout_confirmed, false_breakout]
-
-# 趋势健康度
-th = trend_health(close, ma_window=20, slope_window=10)     # -> int Series (+1/-1/0)
+# 趋势
+td = trend_direction(close)              # +1/上涨 -1/下跌 0/盘整
+th = trend_health(close, volume)         # 上下文感知, +1/健康 -1/衰竭
 ```
 
-### tests（统计检验层）
+### stats（统计分析层）
 
 ```python
-from tests import run_adf, hurst_exponent, estimate_half_life
-from tests import cadf_test, cadf_test_both_orders, johansen_test, construct_portfolio
+from stats.univariate import run_adf, hurst_exponent, estimate_half_life
+from stats.cointegration import cadf_test, johansen_test
 
-adf = run_adf(prices)               # -> {adf_stat, p_value_aic, p_value_bic, ...}
-h = hurst_exponent(prices)          # -> {hurst, r_squared, ...}  H<0.5=均值回归
+adf = run_adf(prices)               # -> {adf_stat, p_value_aic, ...}
+h = hurst_exponent(prices)          # -> {hurst, r_squared, ...}
 hl = estimate_half_life(prices)     # -> {half_life, lambda, ...}
 cadf = cadf_test(y, x)              # -> {hedge_ratio, spread, p_value, ...}
 joh = johansen_test(prices_df)      # -> {eigenvectors, yport, rank, ...}
@@ -648,13 +643,15 @@ class MyCost:
 ## 各模块详细文档
 
 - [data/README.md](data/README.md)
-- [tests/README.md](tests/README.md)
-- [strategies/README.md](strategies/README.md)
 - [signals/README.md](signals/README.md)
+- [stats/README.md](stats/README.md)
+- [strategies/README.md](strategies/README.md)
+- [alpha/README.md](alpha/README.md)
 - [backtest/README.md](backtest/README.md)
+- [tests/README.md](tests/README.md)
 - [explore/README.md](explore/README.md)
-- [experiments/README.md](experiments/README.md)
 - [run/README.md](run/README.md)
+- [experiments/README.md](experiments/README.md)
 
 ---
 
@@ -663,4 +660,4 @@ class MyCost:
 - `ruff check .`：0 errors
 - `basedpyright`：0 errors, 1180 warnings（主要来自 pandas-stubs 类型桩不完整）
 - 21/21 `run_validation()` 通过
-- 92/92 pytest 测试全部通过
+- 109/109 pytest 测试全部通过
