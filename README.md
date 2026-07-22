@@ -63,7 +63,9 @@ QLab/
 │   └── dividend.py        # 除权除息检测与复权
 │
 ├── signals/           # 信号层：从市场数据中提取的、独立于交易策略的信息
-│   ├── vpa.py             # 量价信号（volume_confirmation / wick_body_ratio / volume_anomaly_sequence）
+│   ├── vpa.py             # 量价信号（volume_confirmation / wick_body_ratio / body_strength_percentile / ...）
+│   ├── pivot.py           # 价格结构信号（支点、震荡区间、突破检测）
+│   ├── trend.py           # 趋势健康度信号
 │   └── kalman.py          # 卡尔曼信号（compute_kalman_spread）
 │
 ├── strategies/        # 策略层：按 alpha 类型分类，消费信号生成 num_units
@@ -75,10 +77,13 @@ QLab/
 │   ├── MM/                 # 做市策略
 │   │   └── s10_kalman_mm.py    # S10 卡尔曼做市
 │   ├── Tech/               # 技术分析策略
-│   │   └── ma_crossover.py     # 均线交叉
+│   │   ├── ma_crossover.py     # 均线交叉
+│   │   ├── vpa_trend.py        # VPA 量价趋势跟踪
+│   │   ├── vpa_reversal.py     # VPA 反转形态
+│   │   └── vpa_breakout.py     # VPA 放量突破
 │   ├── experimental/       # 实验策略
 │   │   ├── s11_rsi_draft.py    # RSI 草稿
-│   │   └── s12_vpa_draft.py    # VPA 量价策略（消费 signals/Tech/vpa）
+│   │   └── s12_vpa_draft.py    # VPA 量价策略（消费 signals/vpa）
 │   └── registry.py         # 策略注册表
 │
 ├── backtest/          # 回测层：三层拆分（约束 ← 纯PnL ← 薄封装）
@@ -95,7 +100,10 @@ QLab/
 │   ├── test_constraints.py          # 约束 + 成本模型单元测试
 │   ├── test_kalman_spread.py        # 信号提取数值一致性
 │   ├── test_vpa.py                  # VPA 信号单元测试
-│   ├── test_vpa_strategy.py         # VPA 策略单元测试
+│   ├── test_vpa_strategy.py         # VPA 策略单元测试（草案）
+│   ├── test_vpa_strategies.py       # VPA 策略单元测试（vpa_trend/reversal/breakout）
+│   ├── test_pivot.py                # 价格结构信号单元测试
+│   ├── test_trend.py                # 趋势健康度信号单元测试
 │   ├── test_data_interface.py       # OHLCVSource 协议测试
 │   └── test_tdx_source.py           # TDXSource 测试
 │
@@ -128,6 +136,9 @@ data  ->  signals  ->  strategies  ->  backtest  ->  explore
 | S4 线性均值回归 | `strategies.MR.s4_linear` | 单资产 | 价格序列 | >= 0 (连续) | ✅ 已注册 `linear_mr` |
 | S8 布林带 MR | `strategies.MR.s8_bollinger` | 单资产 | 价格序列 | {0, 1} | ✅ 已注册 `bollinger_mr` |
 | MA Crossover | `strategies.Tech.ma_crossover` | 单资产 | 价格序列 | {0, 1} | ✅ 已注册 `ma_crossover` |
+| VPA 趋势跟踪 | `strategies.Tech.vpa_trend` | 单资产 | `signals.vpa` + `signals.trend` | {0, 0.5, 1} | ✅ 已注册 `vpa_trend` |
+| VPA 反转形态 | `strategies.Tech.vpa_reversal` | 单资产 | `signals.vpa` | {0, 1} | ✅ 已注册 `vpa_reversal` |
+| VPA 放量突破 | `strategies.Tech.vpa_breakout` | 单资产 | `signals.pivot` | {0, 1} | ✅ 已注册 `vpa_breakout` |
 | S7 线性组合 MR | `strategies.MR.s7_linear_portfolio` | 多资产 | 价格矩阵 | >= 0 (连续) | 📦 库代码 |
 | S8 布林带组合 | `strategies.MR.s8_bollinger` | 组合 | 组合净值 | {0, 1} | 📦 库代码 |
 | S9 卡尔曼对冲 | `strategies.MR.s9_kalman_hedge` | 配对 | `signals.kalman` | {0, 1} | 📦 库代码 |
@@ -151,6 +162,13 @@ data  ->  signals  ->  strategies  ->  backtest  ->  explore
 | 量价确认 | `signals.vpa` | +2/+1/-1/-2/0 编码 | S12 |
 | K 线影线比例 | `signals.vpa` | body_ratio, signal | S12 |
 | 量价背离序列 | `signals.vpa` | +1/-1/0 编码 | S12 |
+| 实体强度分位 | `signals.vpa` | 0~1 百分位 | VPA-T1 |
+| 成交量分位 | `signals.vpa` | 0~1 百分位 | VPA-T1/T2 |
+| 量价确认矩阵 | `signals.vpa` | confirmed/trap/anomaly/neutral | VPA-T1 |
+| 孤立支点 | `signals.pivot` | pivot_high, pivot_low | VPA-T3 |
+| 震荡区间 | `signals.pivot` | in_range/breakout_up/breakout_down | VPA-T3 |
+| 突破检测 | `signals.pivot` | breakout_confirmed/false_breakout | VPA-T3 |
+| 趋势健康度 | `signals.trend` | +1/-1/0 | VPA-T1 |
 
 > 信号只做信息提取，不输出 `num_units`。Z-score 是策略逻辑，不是信号。
 
@@ -174,7 +192,7 @@ data  ->  signals  ->  strategies  ->  backtest  ->  explore
 
 **策略（Strategy）** = 决策逻辑。以信号（或价格）为输入，通过 Z-score、阈值等规则生成 `num_units`。
 
-策略按 **alpha 寻找视角** 分类（MR/MM/Tech），信号按 **生成视角** 分类（MR/Tech），两者正交。一个 `signals/MR/` 信号可被 `strategies/MM/` 策略消费。
+策略按 **alpha 寻找视角** 分类（MR/MM/Tech），信号按 **技术概念** 组织（vpa/pivot/trend/kalman），两者正交。一个 `signals/kalman` 信号可被 `strategies/MM/` 策略消费。
 
 分界原则：Z-score 是策略逻辑（留在策略内部）；卡尔曼 spread 是信号（提取到 signals 层）。
 
@@ -226,12 +244,15 @@ constraints.py       core.py            engine.py
 python -m backtest.engine
 python -m backtest.core
 python -m signals.vpa
+python -m signals.pivot
+python -m signals.trend
+python -m strategies.Tech.vpa_trend
 python -m strategies.MR.s4_linear
 python -m strategies.MR.s9_kalman_hedge
 python -m tests.s6_johansen
 ```
 
-目前 16/16 全部通过：
+目前 21/21 全部通过：
 
 | 模块 | `python -m` 命令 |
 |------|------------------|
@@ -242,12 +263,17 @@ python -m tests.s6_johansen
 | `backtest.walk_forward` | `python -m backtest.walk_forward` |
 | `data.dividend` | `python -m data.dividend` |
 | `signals.vpa` | `python -m signals.vpa` |
+| `signals.pivot` | `python -m signals.pivot` |
+| `signals.trend` | `python -m signals.trend` |
 | `strategies.MR.s4_linear` | `python -m strategies.MR.s4_linear` |
 | `strategies.MR.s7_linear_portfolio` | `python -m strategies.MR.s7_linear_portfolio` |
 | `strategies.MR.s8_bollinger` | `python -m strategies.MR.s8_bollinger` |
 | `strategies.MR.s9_kalman_hedge` | `python -m strategies.MR.s9_kalman_hedge` |
 | `strategies.MM.s10_kalman_mm` | `python -m strategies.MM.s10_kalman_mm` |
 | `strategies.Tech.ma_crossover` | `python -m strategies.Tech.ma_crossover` |
+| `strategies.Tech.vpa_trend` | `python -m strategies.Tech.vpa_trend` |
+| `strategies.Tech.vpa_reversal` | `python -m strategies.Tech.vpa_reversal` |
+| `strategies.Tech.vpa_breakout` | `python -m strategies.Tech.vpa_breakout` |
 | `strategies.experimental.s12_vpa_draft` | `python -m strategies.experimental.s12_vpa_draft` |
 | `tests.s3_half_life` | `python -m tests.s3_half_life` |
 | `tests.s6_johansen` | `python -m tests.s6_johansen` |
@@ -368,7 +394,12 @@ codes = source.list_symbols("sh")   # 同 list_symbols
 
 ```python
 from signals.kalman import compute_kalman_spread
-from signals.vpa import volume_confirmation, wick_body_ratio, volume_anomaly_sequence
+from signals.vpa import (
+    volume_confirmation, wick_body_ratio, volume_anomaly_sequence,
+    body_strength_percentile, volume_percentile, vpa_confirmation_matrix,
+)
+from signals.pivot import detect_isolated_pivots, detect_consolidation, detect_breakout
+from signals.trend import trend_health
 
 # 卡尔曼 spread 信号
 sig = compute_kalman_spread(x, y, delta=0.0001, ve=0.001)
@@ -378,6 +409,18 @@ sig = compute_kalman_spread(x, y, delta=0.0001, ve=0.001)
 vc = volume_confirmation(prices, volume, lookback=20)       # -> int Series (+2/+1/-1/-2/0)
 wbr = wick_body_ratio(open, high, low, close)               # -> DataFrame[body_ratio, upper/lower_wick_ratio, signal]
 vas = volume_anomaly_sequence(prices, volume, lookback=3)   # -> int Series (+1/-1/0)
+bsp = body_strength_percentile(open, close, lookback=20)    # -> float Series (0~1)
+vps = volume_percentile(volume, lookback=20)                # -> float Series (0~1)
+vcm = vpa_confirmation_matrix(open, high, low, close, volume, lookback=20)
+# -> DataFrame[confirmed, trap, anomaly, neutral]
+
+# 价格结构信号
+pivots = detect_isolated_pivots(high, low, left=5, right=5) # -> DataFrame[pivot_high, pivot_low]
+cons = detect_consolidation(high, low, lookback=20)         # -> Series[bool]
+brk = detect_breakout(close, high, low, lookback=20)        # -> DataFrame[breakout_confirmed, false_breakout]
+
+# 趋势健康度
+th = trend_health(close, ma_window=20, slope_window=10)     # -> int Series (+1/-1/0)
 ```
 
 ### tests（统计检验层）
@@ -479,6 +522,8 @@ result = run_core(
 | 文件 | 内容 | 示例 |
 |------|------|------|
 | `signals/vpa.py` | 量价分析信号 | `volume_confirmation`, `wick_body_ratio` |
+| `signals/pivot.py` | 价格结构信号 | `detect_isolated_pivots`, `detect_breakout` |
+| `signals/trend.py` | 趋势健康度信号 | `trend_health` |
 | `signals/kalman.py` | 卡尔曼滤波信号 | `compute_kalman_spread` |
 
 如果是新的技术概念，新建 `signals/<概念名>.py`。一个文件内可放多个相关信号函数。
@@ -646,6 +691,6 @@ class MyCost:
 ## 验证状态
 
 - `ruff check .`：0 errors
-- `basedpyright`：0 errors, 1121 warnings（主要来自 pandas-stubs 类型桩不完整）
-- 16/16 `run_validation()` 通过
-- 74/74 pytest 测试全部通过
+- `basedpyright`：0 errors, 1180 warnings（主要来自 pandas-stubs 类型桩不完整）
+- 21/21 `run_validation()` 通过
+- 92/92 pytest 测试全部通过

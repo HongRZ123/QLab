@@ -15,6 +15,13 @@
 | 量价确认 | `vpa.py` | `volume_confirmation` | int Series (+2/+1/-1/-2/0) | S12 |
 | K 线影线比例 | `vpa.py` | `wick_body_ratio` | DataFrame[body_ratio, wick ratios, signal] | S12 |
 | 量价背离序列 | `vpa.py` | `volume_anomaly_sequence` | int Series (+1/-1/0) | -- |
+| 实体强度分位 | `vpa.py` | `body_strength_percentile` | float Series (0~1) | VPA-T1 |
+| 成交量分位 | `vpa.py` | `volume_percentile` | float Series (0~1) | VPA-T1/T2 |
+| 量价确认矩阵 | `vpa.py` | `vpa_confirmation_matrix` | str Series (confirmed/trap/anomaly/neutral) | VPA-T1 |
+| 孤立支点 | `pivot.py` | `detect_isolated_pivots` | DataFrame[pivot_high, pivot_low] | VPA-T3 |
+| 震荡区间 | `pivot.py` | `detect_consolidation` | str Series (in_range/breakout_up/breakout_down) | VPA-T3 |
+| 突破检测 | `pivot.py` | `detect_breakout` | str Series (breakout_confirmed/false_breakout) | VPA-T3 |
+| 趋势健康度 | `trend.py` | `trend_health` | int Series (+1/-1/0) | VPA-T1 |
 | 卡尔曼 spread | `kalman.py` | `compute_kalman_spread` | dict[beta_slope, e, sqrt_Q, spread, ...] | S9 |
 
 ---
@@ -95,8 +102,62 @@ sig = compute_kalman_spread(x, y, delta=0.0001, ve=0.001)
 
 ---
 
+## pivot.py -- 价格结构信号
+
+### detect_isolated_pivots
+
+孤立支点检测（Ch7）。
+
+```python
+from signals.pivot import detect_isolated_pivots
+
+pivots = detect_isolated_pivots(high, low)
+# -> DataFrame[pivot_high, pivot_low]
+```
+
+### detect_consolidation
+
+震荡区间识别（Ch7）。
+
+```python
+from signals.pivot import detect_consolidation
+
+consol = detect_consolidation(high, low, pivots, tolerance=0.02)
+# "in_range" / "breakout_up" / "breakout_down"
+```
+
+### detect_breakout
+
+突破与伪突破检测（Ch7）。
+
+```python
+from signals.pivot import detect_breakout
+
+sig = detect_breakout(close, volume, range_bound=(upper, lower), lookback=20)
+# "breakout_confirmed" / "false_breakout"
+```
+
+---
+
+## trend.py -- 趋势健康度信号
+
+### trend_health
+
+趋势健康度（Ch8）。
+
+```python
+from signals.trend import trend_health
+
+th = trend_health(close, volume, lookback=20)
+# +1=健康, -1=走弱, 0=中性
+```
+
+---
+
 ## 验证
 
 ```bash
-python -m signals.vpa       # VPA 信号：正控（趋势+放量）+ 负控（随机游走）
+python -m signals.vpa       # VPA 信号
+python -m signals.pivot     # 结构信号
+python -m signals.trend     # 趋势健康度
 ```

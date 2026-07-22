@@ -9,7 +9,7 @@
 | S4 线性均值回归 | `s4_linear.py` | 价格序列（内联 Z-score） | ≥ 0 (连续) | ✅ `linear_mr` |
 | S7 线性组合 MR | `s7_linear_portfolio.py` | 价格矩阵（内联 Z-score） | ≥ 0 (连续) | ❌ |
 | S8 布林带 MR | `s8_bollinger.py` | 价格序列（内联 Z-score） | {0, 1} | ✅ `bollinger_mr` |
-| S9 卡尔曼对冲 | `s9_kalman_hedge.py` | `signals/MR/kalman_spread` | {0, 1} | ❌ |
+| S9 卡尔曼对冲 | `s9_kalman_hedge.py` | `signals.kalman` | {0, 1} | ❌ |
 
 > **重要**: 策略内置的 `pnl`/`ret` 为**理论值**（无成本、无 T+1、无手数取整）。生产回测请使用 `backtest.run_backtest()`。
 
@@ -187,12 +187,12 @@ python -m strategies.MR.s8_bollinger    # OU 正控 + GBM 负控
 
 Chan Ch.3 Box 3.1 策略。用卡尔曼滤波估计两个资产间的动态对冲比率 β(t)，以预测误差 e(t) 和动态标准差 √Q(t) 构造布林带信号。当 y 相对 x 被低估（e < -√Q）时买入。
 
-**信号提取委托给 `signals/MR/kalman_spread.py`**，策略层只保留交易规则和 PnL 计算。
+**信号提取委托给 `signals/kalman.py`**，策略层只保留交易规则和 PnL 计算。
 
 ### 公式
 
 ```
-# 信号层 (signals/MR/kalman_spread.py):
+# 信号层 (signals/kalman.py):
 卡尔曼滤波 -> β(t), e(t), Q(t), √Q(t)
 
 # 策略层 (本文件):

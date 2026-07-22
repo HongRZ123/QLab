@@ -38,5 +38,5 @@ reportUnknownArgumentType = "warning"
 reportMissingParameterType = "warning"
 
 reportUnusedVariable = "warning"
-include = ["data", "tests", "strategies", "backtest", "explore", "run_strategy.py", "research_strategy.py"]
-exclude = ["experiments"]
+include = ["data", "signals", "tests", "strategies", "backtest", "explore", "run_strategy.py", "research_strategy.py"]
+exclude = ["experiments", "templates"]

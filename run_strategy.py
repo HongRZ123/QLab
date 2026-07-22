@@ -51,15 +51,15 @@ def _to_binary(num_units: pd.Series) -> pd.Series:
     return (num_units > 0).astype(float)
 
 
-def _load_and_adjust(symbol: str) -> pd.Series:
+def _load_and_adjust(symbol: str) -> pd.DataFrame:
     """
-    加载收盘价并处理除权除息。
+    加载完整 OHLCV 数据并处理除权除息。
 
     参数:
         symbol: 标的代码
 
     返回:
-        pd.Series: 除权调整后的收盘价
+        pd.DataFrame: 含 open/high/low/close/volume 列，close 已复权
 
     异常:
         FileNotFoundError: 数据文件不存在
@@ -73,14 +73,15 @@ def _load_and_adjust(symbol: str) -> pd.Series:
     n_ex = int(ex_div.sum())
     if n_ex > 0:
         print(f"  检测到 {n_ex} 个除权除息日, 已调整价格")
-        close = adjust_close_prices(close, open_prices, ex_div)
+        df["close"] = adjust_close_prices(close, open_prices, ex_div)
 
-    return close
+    return df
+
 
 
 def _run_single(
     symbol: str,
-    close: pd.Series,
+    ohlcv: pd.DataFrame,
     strategy_name: str,
 ) -> dict:
     """
@@ -88,7 +89,7 @@ def _run_single(
 
     参数:
         symbol:         标的代码
-        close:          除权调整后的收盘价
+        ohlcv:          含 open/high/low/close/volume 的 DataFrame
         strategy_name:  策略名称 (注册表中的键)
 
     返回:
@@ -98,7 +99,13 @@ def _run_single(
     print(f"  [{strategy_name}] {entry.description}")
 
     # 1) 运行策略, 获取 num_units
-    result = run_strategy(strategy_name, close)
+    if entry.data_requirements == "ohlcv":
+        result = run_strategy(strategy_name, ohlcv)
+        close = ohlcv["close"]
+    else:
+        close = ohlcv["close"]
+        result = run_strategy(strategy_name, close)
+
     num_units = result["num_units"]
 
     # 对齐 index
@@ -206,12 +213,12 @@ def main() -> None:
     print(f"{'=' * 60}")
 
     try:
-        close = _load_and_adjust(symbol)
+        ohlcv = _load_and_adjust(symbol)
     except FileNotFoundError as e:
         print(f"\n[错误] {e}")
         return
 
-    print(f"  {len(close)} 天 ({close.index[0].date()} ~ {close.index[-1].date()})")
+    print(f"  {len(ohlcv)} 天 ({ohlcv.index[0].date()} ~ {ohlcv.index[-1].date()})")
 
     # ── 2. 运行策略 ──
     print(f"\n{'=' * 60}")
@@ -221,7 +228,7 @@ def main() -> None:
     rows: list[dict] = []
     for name in strategy_names:
         try:
-            row = _run_single(symbol, close, name)
+            row = _run_single(symbol, ohlcv, name)
             rows.append(row)
 
             print(f"    Sharpe={row['sharpe']:7.3f}  "
