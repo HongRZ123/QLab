@@ -19,7 +19,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 import numpy as np
 
 from data.fetcher import read_day
-from signals.stats_cointegration import cadf_test
+from stats.cointegration import cadf_test
 from strategies.MR.s9_kalman_hedge import kalman_hedge as strategy_fn
 
 STRATEGY_NAME = "kalman_hedge"

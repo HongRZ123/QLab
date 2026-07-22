@@ -33,7 +33,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # ETF 宇宙统一来源: alpha.defaults
 from alpha.defaults import ETF_UNIVERSE
 from data.fetcher import read_day
-from signals.stats import estimate_half_life, hurst_exponent, run_adf
+from stats.univariate import estimate_half_life, hurst_exponent, run_adf
 
 # ============================================================
 # 滚动窗口参数

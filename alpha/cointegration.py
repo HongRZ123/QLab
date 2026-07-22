@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 
 from data.fetcher import read_day
-from signals.stats_cointegration import cadf_test, johansen_test
+from stats.cointegration import cadf_test, johansen_test
 
 
 def screen_pairs(

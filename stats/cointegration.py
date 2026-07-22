@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.vector_ar.vecm import coint_johansen
 
-from signals.stats import estimate_half_life, run_adf
+from stats.univariate import estimate_half_life, run_adf
 
 # ============================================================
 # CADF — Engle-Granger 两步法协整检验

@@ -28,7 +28,7 @@ if str(_PROJECT_ROOT) not in sys.path:
 import pandas as pd
 
 from data.fetcher import read_day
-from signals.stats import hurst_exponent
+from stats.univariate import hurst_exponent
 
 
 def score_momentum(close: pd.Series, volume: pd.Series) -> dict:
