@@ -47,7 +47,7 @@ import numpy as np
 import pandas as pd
 
 from data.fetcher import read_day
-from stats.univariate import estimate_half_life, hurst_exponent, run_adf
+from signals.stats import estimate_half_life, hurst_exponent, run_adf
 
 # ============================================================
 # 配置

@@ -32,7 +32,7 @@ s4_linear.py — 线性均值回归策略（单资产，仅做多）
 import numpy as np
 import pandas as pd
 
-from stats.univariate import estimate_half_life, generate_gbm_paths, generate_ou_paths
+from signals.stats import estimate_half_life, generate_gbm_paths, generate_ou_paths
 
 # ============================================================
 # 核心函数

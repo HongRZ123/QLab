@@ -106,7 +106,7 @@ def run_validation() -> bool:
     返回:
         bool: 全部通过返回 True
     """
-    from stats.univariate import generate_gbm_paths, generate_ou_paths
+    from signals.stats import generate_gbm_paths, generate_ou_paths
 
     print("=" * 60)
     print("  RSI 均值回归策略 - 验证协议")

@@ -31,7 +31,7 @@ PnL 计算 (同 S4 Chan 公式):
 import numpy as np
 import pandas as pd
 
-from stats.univariate import generate_gbm_paths, generate_ou_paths
+from signals.stats import generate_gbm_paths, generate_ou_paths
 
 # ============================================================
 # 核心函数

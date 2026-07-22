@@ -20,8 +20,8 @@ import numpy as np
 import pandas as pd
 
 from data.fetcher import read_day
-from stats.cointegration import johansen_test
-from stats.univariate import estimate_half_life
+from signals.stats import estimate_half_life
+from signals.stats_cointegration import johansen_test
 from strategies.MR.s7_linear_portfolio import linear_portfolio as strategy_fn
 
 STRATEGY_NAME = "linear_portfolio"
