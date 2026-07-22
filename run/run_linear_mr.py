@@ -27,12 +27,15 @@ OUTPUT_CSV: str | None = None
 
 
 def main() -> None:
-    from alpha.defaults import get_mr_candidates
+    from alpha.defaults import get_universe
+    from alpha.stationarity import screen_stationarity
     from backtest.engine import run_backtest
     from backtest.metrics import performance_summary
     from run._common import load_close
 
-    candidates = get_mr_candidates()
+    UNIVERSE = get_universe("broad_etf") + get_universe("industry")
+    TOP_N = 3
+    candidates = [r["symbol"] for r in screen_stationarity(UNIVERSE, top_n=TOP_N)] or ["sh512670", "sh510300", "sz159915"]
     rows: list[dict] = []
 
     print(f"=== {STRATEGY_NAME} 脳 {len(candidates)} candidates: {', '.join(candidates)}")

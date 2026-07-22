@@ -28,9 +28,12 @@ OUTPUT_CSV: str | None = None
 
 
 def main() -> None:
-    from alpha.defaults import get_pair_candidates
+    from alpha.cointegration import screen_pairs
+    from alpha.defaults import get_universe
 
-    pairs = get_pair_candidates()
+    UNIVERSE = get_universe("broad_etf")
+    TOP_N = 3
+    pairs = [r["pair"] for r in screen_pairs(UNIVERSE, top_n=TOP_N)]
     rows: list[dict] = []
 
     print(f"=== {STRATEGY_NAME} 脳 {len(pairs)} pairs")

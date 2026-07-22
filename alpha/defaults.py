@@ -1,20 +1,14 @@
 """
-alpha/defaults.py — 默认标的配置与候选选取
+alpha/defaults.py — ETF 分类宇宙与标的查询
 
-所有端到端模板从本模块获取标的列表，不再硬编码 SYMBOL。
-
-设计意图:
-    今天是静态列表，明天可以切到 screen_stationarity() / screen_momentum() /
-    screen_cointegration()。模板调 alpha.defaults 这一个入口，
-    内部是静态 dict 还是评分函数对模板透明。
+提供 ETF 分类宇宙数据和按类别取标的的函数。不包含候选选取逻辑——
+候选选取由各 run/ 脚本直接调用 alpha/stationarity.py / momentum.py /
+cointegration.py 完成。
 
 Functions:
-    get_mr_candidates() -> list[str]          均值回归候选标的
-    get_trend_candidates() -> list[str]        趋势跟踪候选标的
-    get_pair_candidates() -> list[tuple]       配对交易候选
-    get_portfolio_candidates() -> list[list]   组合策略候选
-    get_universe(category) -> list[str]        按类别取标的
-    ETF_UNIVERSE: dict[str, list[str]]         标的分类宇宙
+    get_universe(category) -> list[str]    按类别取标的
+    list_categories() -> list[str]         所有可用类别
+    ETF_UNIVERSE: dict[str, list[str]]     标的分类宇宙 (38只)
 """
 from __future__ import annotations
 
@@ -44,63 +38,6 @@ ETF_UNIVERSE: dict[str, list[str]] = {
 # ============================================================
 # Public API
 # ============================================================
-
-def get_mr_candidates() -> list[str]:
-    """均值回归策略的默认候选标的。
-
-    调用 alpha.stationarity.screen_stationarity() 按 ADF+Hurst+HL 评分。
-    扫描 universe 中除 index 外的 ETF，返回 top 3。
-    如果评分筛选结果为空，回退到硬编码列表。
-    """
-    from alpha.stationarity import screen_stationarity
-
-    universe = get_universe("broad_etf") + get_universe("industry")
-    results = screen_stationarity(universe, top_n=3)
-    if results:
-        return [r["symbol"] for r in results]
-
-    # fallback: 如果所有 ETF 都不满足严格筛选条件，用已知的 MR 候选
-    return ["sh512670", "sh510300", "sz159915"]
-
-
-def get_trend_candidates() -> list[str]:
-    """趋势跟踪策略的默认候选标的。
-
-    调用 alpha.momentum.screen_momentum() 按 Hurst+趋势健康度+动量评分。
-    扫描 universe 中除 index 外的 ETF，返回 top 3。
-    """
-    from alpha.momentum import screen_momentum
-
-    universe = get_universe("broad_etf") + get_universe("industry")
-    results = screen_momentum(universe, top_n=3)
-    return [r["symbol"] for r in results]
-
-
-def get_pair_candidates() -> list[tuple[str, str]]:
-    """配对交易的默认候选标的对。
-
-    调用 alpha.cointegration.screen_pairs() 做 CADF 配对筛选。
-    扫描 broad_etf 中的标的，返回 top 3 对。
-    """
-    from alpha.cointegration import screen_pairs
-
-    universe = get_universe("broad_etf")
-    results = screen_pairs(universe, top_n=3)
-    return [r["pair"] for r in results]
-
-
-def get_portfolio_candidates() -> list[list[str]]:
-    """组合策略的默认候选标的组。
-
-    调用 alpha.cointegration.screen_portfolio() 做 Johansen 组合筛选。
-    扫描 broad_etf 中的标的，返回 top 3 组。
-    """
-    from alpha.cointegration import screen_portfolio
-
-    universe = get_universe("broad_etf")
-    results = screen_portfolio(universe, top_n=3)
-    return [r["symbols"] for r in results]
-
 
 def get_universe(category: str | None = None) -> list[str]:
     """返回标的宇宙。
