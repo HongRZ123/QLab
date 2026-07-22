@@ -37,8 +37,8 @@ python run/run_linear_portfolio.py # S7 线性组合均值回归
 python run/run_walk_forward.py     # Walk-Forward 滚动重估
 
 # 全市场扫描
-python explore/scan_stationarity.py
 python explore/scan_ma_crossover.py
+python stats/scan.py
 ```
 
 复制脚本改参数即可：
@@ -66,9 +66,7 @@ QLab/
 │   ├── vpa.py             # 量价信号（effort_vs_result / stopping_volume / ...）
 │   ├── pivot.py           # 价格结构信号（支点、震荡区间、突破检测）
 │   ├── trend.py           # 趋势健康度信号
-│   ├── kalman.py          # 卡尔曼信号（compute_kalman_spread）
-│   ├── stats.py           # 统计性质信号 (ADF / Hurst / 半衰期)
-│   └── stats_cointegration.py  # 协整性质信号 (CADF / Johansen)
+│   └── kalman.py          # 卡尔曼信号（compute_kalman_spread）
 │
 ├── strategies/        # 策略层：按 alpha 类型分类，消费信号生成 num_units
 │   ├── MR/                 # 均值回归策略
@@ -95,8 +93,7 @@ QLab/
 │   ├── metrics.py          # 绩效指标（Sharpe, 最大回撤等）
 │   └── walk_forward.py     # Walk-Forward 分析
 │
-├── tests/             # 检验层：统计检验 + 单元测试
-│   ├── s1_adf.py ~ s6_johansen.py   # ADF / Hurst / 半衰期 / CADF / Johansen
+├── tests/             # 检验层：pytest 单元测试
 │   ├── test_engine_snapshot.py      # 引擎快照测试（6 场景）
 │   ├── test_backtest_core.py        # run_core vs run_backtest 等价性
 │   ├── test_constraints.py          # 约束 + 成本模型单元测试
@@ -109,7 +106,7 @@ QLab/
 │   ├── test_data_interface.py       # OHLCVSource 协议测试
 │   └── test_tdx_source.py           # TDXSource 测试
 │
-├── explore/           # 探索层：全市场扫描脚本
+├── stats/             # 统计分析层：ADF/Hurst/半衰期、CADF/Johansen、全市场扫描
 ├── experiments/       # 实验层：完全独立的研究脚本
 ├── run/               # 执行层：每个策略的端到端入口
 ├── alpha/             # 标的选取层：ETF 宇宙、平稳性筛选
@@ -176,11 +173,11 @@ data  ->  signals  ->  strategies  ->  backtest  ->  explore/
 
 | 检验 | 模块 | 用途 |
 |------|------|------|
-| ADF | `tests.s1_adf` | 平稳性检验 |
-| Hurst | `tests.s2_hurst` | 均值回归 vs 趋势判定 |
-| 半衰期 | `tests.s3_half_life` | 均值回归速度 -> lookback 参数 |
-| CADF | `tests.s5_cadf` | 配对交易对冲比率 |
-| Johansen | `tests.s6_johansen` | 多资产协整组合 |
+| ADF | `stats/univariate.py` | 平稳性检验 |
+| Hurst | `stats/univariate.py` | 均值回归 vs 趋势判定 |
+| 半衰期 | `stats/univariate.py` | 均值回归速度 -> lookback 参数 |
+| CADF | `stats/cointegration.py` | 配对交易对冲比率 |
+| Johansen | `stats/cointegration.py` | 多资产协整组合 |
 
 ---
 
@@ -275,7 +272,7 @@ python -m tests.s6_johansen
 | `strategies.Tech.vpa_reversal` | `python -m strategies.Tech.vpa_reversal` |
 | `strategies.Tech.vpa_breakout` | `python -m strategies.Tech.vpa_breakout` |
 | `strategies.experimental.s12_vpa_draft` | `python -m strategies.experimental.s12_vpa_draft` |
-| `tests.s3_half_life` | `python -m tests.s3_half_life` |
+| `tests.s3_half_life` | `python -m stats.univariate` |
 | `tests.s6_johansen` | `python -m tests.s6_johansen` |
 
 ---
@@ -314,7 +311,7 @@ result = kalman_hedge(x_prices, y_prices, burn_in=60)
 
 # S7 组合均值回归
 from strategies.MR.s7_linear_portfolio import linear_portfolio
-from tests.s6_johansen import johansen_test
+from stats.cointegration import johansen_test
 joh = johansen_test(prices_df)
 result = linear_portfolio(prices_df, joh["eigenvectors"][:, 0])
 
@@ -496,8 +493,8 @@ result = run_core(
 | `signals/pivot.py` | 价格结构信号 | `detect_isolated_pivots`, `detect_breakout` |
 | `signals/trend.py` | 趋势健康度信号 | `trend_health`, `trend_direction` |
 | `signals/kalman.py` | 卡尔曼滤波信号 | `compute_kalman_spread` |
-| `signals/stats.py` | 统计性质信号 | `run_adf`, `hurst_exponent`, `estimate_half_life` |
-| `signals/stats_cointegration.py` | 协整性质信号 | `cadf_test`, `johansen_test` |
+| `stats/univariate.py` | 统计检验信号 | `run_adf`, `hurst_exponent`, `estimate_half_life` |
+| `stats/cointegration.py` | 协整检验信号 | `cadf_test`, `johansen_test` |
 
 如果是新的技术概念，新建 `signals/<概念名>.py`。一个文件内可放多个相关信号函数。
 
@@ -592,7 +589,7 @@ def run_validation() -> bool:
     return all_passed
 ```
 
-可参考 `strategies/MR/s4_linear.py` 的 `run_validation()` 实现。合成数据生成器在 `tests/s3_half_life.py`（`generate_ou_paths`, `generate_gbm_paths`）。
+可参考 `strategies/MR/s4_linear.py` 的 `run_validation()` 实现。合成数据生成器在 `stats/univariate.py`（`generate_ou_paths`, `generate_gbm_paths`）。
 
 运行方式：`python -m strategies.MR.my_strategy`
 
