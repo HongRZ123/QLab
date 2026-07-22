@@ -4,12 +4,11 @@
 [![License: MIT](https://img.shields.io/github/license/HongRZ123/QLab)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)
 
-> **QLab** is an A-share quantitative research platform built on Chan's *Algorithmic Trading* methodology. It provides a full pipeline from data loading, statistical testing, signal extraction, and strategy development to a backtest engine with realistic A-share constraints (T+1, price limits, lot sizing, commissions) and walk-forward optimization.
+> **QLab** is an A-share quantitative research platform combining Chan's *Algorithmic Trading* (mean-reversion, cointegration) and Anna Coulling's *Volume Price Analysis* (VPA). It provides a layered pipeline: data loading → signal extraction → alpha screening → strategy → backtest, with realistic A-share constraints (T+1, price limits, lot sizing, commissions).
 
-基于 Chan《Algorithmic Trading》方法论构建的 A 股量化研究框架。
-覆盖从数据加载、统计检验、信号提取、策略开发、回测引擎到 Walk-Forward 优化的完整管道。
-
-回测引擎内置 A 股交易约束（T+1、涨跌停、停牌、手数取整、佣金/印花税/滑点），并通过 Protocol 协议支持自定义约束与成本模型。
+基于 Chan《Algorithmic Trading》与 Anna Coulling《量价分析》双方法论构建的 A 股量化研究框架。
+覆盖数据加载、信号提取、alpha 选股、策略决策、回测评估的完整六层管道。
+内置 A 股交易约束（T+1、涨跌停、手数取整、佣金印花税滑点）。
 
 ## 快速开始
 
