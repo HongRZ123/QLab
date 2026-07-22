@@ -29,8 +29,8 @@ s7_linear_portfolio.py — 线性均值回归策略（组合版，仅做多）
 import numpy as np
 import pandas as pd
 
-from tests.s3_half_life import estimate_half_life
-from tests.s6_johansen import generate_cointegrated_paths, johansen_test
+from signals.stats import estimate_half_life
+from signals.stats_cointegration import generate_cointegrated_paths, johansen_test
 
 # ============================================================
 # 核心函数

@@ -30,33 +30,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+# ETF 宇宙统一来源: alpha.defaults
+from alpha.defaults import ETF_UNIVERSE
 from data.fetcher import read_day
-from tests.s1_adf import run_adf
-from tests.s2_hurst import hurst_exponent
-from tests.s3_half_life import estimate_half_life
-
-# ============================================================
-# 配置: ETF 分类宇宙 (硬编码, 确保可复现)
-# ============================================================
-
-ETF_UNIVERSE = {
-    "control_index": [
-        "sh000001", "sh000300", "sh000905", "sh000016", "sz399006",
-    ],
-    "broad_etf": [
-        "sh510050", "sh510300", "sh510500", "sz159915", "sh588000",
-    ],
-    "industry": [
-        "sh512880", "sh512800", "sh512010", "sh512690", "sh515030",
-        "sh512480", "sh512660", "sh512200", "sh512400", "sh515220",
-        "sh515210", "sh512980", "sh512720", "sh512760", "sh515790",
-        "sz159996", "sh512170", "sh515050", "sh512670", "sh561660",
-    ],
-    "cross_border": [
-        "sh513100", "sh513050", "sh513600", "sh513880",
-        "sh518880", "sz159985", "sh501018", "sh513030",
-    ],
-}
+from signals.stats import estimate_half_life, hurst_exponent, run_adf
 
 # ============================================================
 # 滚动窗口参数

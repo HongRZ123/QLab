@@ -31,10 +31,8 @@ from backtest.metrics import performance_summary
 from backtest.walk_forward import walk_forward_bollinger, walk_forward_linear_mr
 from data.dividend import adjust_close_prices, detect_ex_dividend
 from data.fetcher import read_day
-from strategies.registry import list_names, run_strategy
-from tests.s1_adf import run_adf
-from tests.s2_hurst import hurst_exponent
-from tests.s3_half_life import estimate_half_life
+from signals.stats import estimate_half_life, hurst_exponent, run_adf
+from strategies.registry import list_names
 
 # ============================================================
 # CONFIG
@@ -111,9 +109,21 @@ def main() -> None:
     strategy_names = list_names()
     rows: list[dict] = []
 
+    # close-only strategies (OHLCV strategies need ohlcv input, use run scripts instead)
+    from strategies.MR.s4_linear import linear_mr
+    from strategies.MR.s8_bollinger import bollinger_mr
+    from strategies.Tech.ma_crossover import ma_crossover
+    close_strategies = {
+        "linear_mr": linear_mr,
+        "bollinger_mr": bollinger_mr,
+        "ma_crossover": ma_crossover,
+    }
+
     for name in strategy_names:
+        if name not in close_strategies:
+            continue  # skip OHLCV strategies here
         try:
-            result = run_strategy(name, close)
+            result = close_strategies[name](close)
             num_units = result["num_units"]
 
             common_idx = close.index.intersection(num_units.index)

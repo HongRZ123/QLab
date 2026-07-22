@@ -19,7 +19,7 @@ S7/S9 为多资产/价差策略, 使用策略自身收益率。
 列: symbol, strategy, lookback, entry_z, apr, sharpe, max_dd, win_rate, n_trades, avg_holding
 
 用法:
-    python explore/run_strategy.py
+    python run/run_walk_forward.py
 """
 
 import sys

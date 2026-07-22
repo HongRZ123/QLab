@@ -8,7 +8,7 @@
 backtest/
 ├── 内部依赖: data.rules (round_to_lot — 手数取整)
 ├── 内部依赖: strategies (linear_mr, bollinger_mr, linear_portfolio — Walk-Forward 调用)
-├── 内部依赖: tests (estimate_half_life, johansen_test — Walk-Forward 重估)
+├── 内部依赖: signals (estimate_half_life, johansen_test — Walk-Forward 重估)
 └── 外部依赖: numpy, pandas
 ```
 

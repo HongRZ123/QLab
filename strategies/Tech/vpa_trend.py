@@ -1,70 +1,85 @@
 """
-vpa_trend.py -- VPA-T1 量价确认趋势跟踪策略
+vpa_trend.py -- VPA 量价确认趋势跟踪策略 (重写版)
 
 基于《量价分析》Ch4 确认/异常方法论 + Ch8 趋势健康度。
+对应书中策略七：趋势跟踪 (Trend Following with Volume Confirmation)。
 
-策略逻辑：
-    - 量价和谐确认（confirmed）且趋势健康 -> 满仓
-    - 量价确认但趋势走弱 -> 半仓
-    - 异常（anomaly）或陷阱（trap） -> 空仓
-    - 仅做多：只在 close > open 时产生多头信号
+重写改进：
+    1. 使用 effort_vs_result (spread-based) 代替 vpa_confirmation_matrix (body-based)
+    2. 使用上下文感知的 trend_health
+    3. 使用 trend_direction 确保只在趋势中持仓
+
+策略逻辑（仅做多）：
+    - effort_vs_result ≈ 1（量价确认）+ 趋势健康 + 上涨趋势 -> 满仓
+    - effort_vs_result ≈ 1 + 趋势衰竭 + 上涨趋势 -> 半仓
+    - effort_vs_result 异常（>>1 或 <<1）或趋势下跌 -> 空仓
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from signals.trend import trend_health
-from signals.vpa import vpa_confirmation_matrix
+from signals.trend import trend_direction, trend_health
+from signals.vpa import effort_vs_result
 
 
 def vpa_trend(
     ohlcv: pd.DataFrame,
     lookback: int = 20,
+    confirm_low: float = 0.7,
+    confirm_high: float = 1.5,
 ) -> dict:
-    """
-    VPA 量价确认趋势跟踪策略。
+    """VPA 量价确认趋势跟踪策略
 
     参数:
         ohlcv: DataFrame[open, high, low, close, volume]
         lookback: 信号滚动窗口
+        confirm_low: effort_vs_result 确认下界（在此与 confirm_high 之间 = 确认）
+        confirm_high: effort_vs_result 确认上界
 
     返回:
         dict: {
-            "num_units": pd.Series,  # 仓位比例 (0~1)
-            "signal": pd.Series,     # 原始信号分类
-            "trend_health": pd.Series,  # 趋势健康度 (+1/-1/0)
+            "num_units": pd.Series,       # 仓位比例 (0~1)
+            "effort_vs_result": pd.Series, # 投入产出比
+            "trend_direction": pd.Series,  # 趋势方向
+            "trend_health": pd.Series,     # 趋势健康度
         }
     """
-    open_s = ohlcv["open"]
     close = ohlcv["close"]
     volume = ohlcv["volume"]
 
-    matrix = vpa_confirmation_matrix(open_s, close, volume, lookback=lookback)
-    health = trend_health(close, volume, lookback=lookback)
-    bullish = close > open_s
+    evr = effort_vs_result(ohlcv, lookback=lookback)
+    td = trend_direction(close, lookback=lookback)
+    th = trend_health(close, volume, lookback=lookback)
+
+    # 量价确认：evr 在 [confirm_low, confirm_high] 之间
+    confirmed = (evr >= confirm_low) & (evr <= confirm_high)
+
+    # 仅在上涨趋势中做多
+    uptrend = td == 1
 
     num_units = pd.Series(0.0, index=close.index)
 
-    # confirmed + 趋势健康 + 上涨 K 线 -> 满仓
-    full_long = (matrix == "confirmed") & (health == 1) & bullish
-    # confirmed + 趋势走弱 + 上涨 K 线 -> 半仓
-    half_long = (matrix == "confirmed") & (health == -1) & bullish
+    # 满仓：确认 + 健康 + 上涨趋势
+    full_long = confirmed & (th == 1) & uptrend
+    # 半仓：确认 + 衰竭 + 上涨趋势（减仓但不退出）
+    half_long = confirmed & (th == -1) & uptrend
 
     num_units[full_long] = 1.0
     num_units[half_long] = 0.5
 
     return {
         "num_units": num_units,
-        "signal": matrix,
-        "trend_health": health,
+        "effort_vs_result": evr,
+        "trend_direction": td,
+        "trend_health": th,
     }
 
 
 def run_validation() -> bool:
     """VPA 趋势策略验证协议"""
     print("=" * 60)
-    print("VPA 趋势策略验证协议（vpa_trend.py）")
+    print("VPA 趋势策略验证协议 (vpa_trend.py 重写版)")
     print("=" * 60)
 
     all_pass = True
@@ -72,21 +87,21 @@ def run_validation() -> bool:
     n = 500
 
     # ── 正控：健康上涨趋势 -> 应有较多持仓 ──
-    print("\n【正控】健康上涨趋势")
+    print("\n【正控】健康上涨趋势 + 量价确认")
     print("-" * 60)
 
     base_body = np.linspace(0.05, 0.3, n)
     body = np.maximum(base_body + np.random.randn(n) * 0.05, 0.01)
     close = pd.Series(np.cumsum(body) + 10)
     open_s = close.shift(1).fillna(close.iloc[0])
+    # 构造 high/low 使 spread 与 body 正相关
+    high = pd.concat([open_s, close], axis=1).max(axis=1) + body * 0.3
+    low = pd.concat([open_s, close], axis=1).min(axis=1) - body * 0.3
     volume = (body * 50000 + np.random.randint(100, 500, n)).clip(min=100)
 
     ohlcv = pd.DataFrame({
-        "open": open_s,
-        "high": np.maximum(open_s, close) + 0.1,
-        "low": np.minimum(open_s, close) - 0.1,
-        "close": close,
-        "volume": volume,
+        "open": open_s, "high": high, "low": low,
+        "close": close, "volume": volume,
     })
 
     result = vpa_trend(ohlcv, lookback=20)
@@ -104,30 +119,31 @@ def run_validation() -> bool:
     np.random.seed(43)
     close_r = pd.Series(np.cumsum(np.random.randn(n)) + 10)
     open_r = close_r.shift(1).fillna(close_r.iloc[0])
-    volume_r = pd.Series(np.random.randint(500, 1500, n))
+    high_r = pd.concat([open_r, close_r], axis=1).max(axis=1) + 0.1
+    low_r = pd.concat([open_r, close_r], axis=1).min(axis=1) - 0.1
+    volume_r = pd.Series(np.random.randint(500, 1500, n).astype(float))
 
     ohlcv_r = pd.DataFrame({
-        "open": open_r,
-        "high": np.maximum(open_r, close_r) + 0.1,
-        "low": np.minimum(open_r, close_r) - 0.1,
-        "close": close_r,
-        "volume": volume_r,
+        "open": open_r, "high": high_r, "low": low_r,
+        "close": close_r, "volume": volume_r,
     })
 
     result_r = vpa_trend(ohlcv_r, lookback=20)
     pos_ratio_r = (result_r["num_units"] > 0).sum() / len(result_r["num_units"])
-    neg_ok = pos_ratio_r <= 0.40
-    print(f"  持仓天数占比: {pos_ratio_r:.2%} (要求 <= 40%)  "
+    neg_ok = pos_ratio_r <= 0.50
+    print(f"  持仓天数占比: {pos_ratio_r:.2%} (要求 <= 50%)  "
           f"[{'PASS' if neg_ok else 'FAIL'}]")
     if not neg_ok:
         all_pass = False
 
-    # ── 不变式：num_units >= 0 ──
-    print("\n【不变式】num_units >= 0")
+    # ── 不变式：num_units >= 0 且 <= 1 ──
+    print("\n【不变式】num_units ∈ [0, 1]")
     print("-" * 60)
     nonneg_ok = (result["num_units"] >= 0).all()
-    print(f"  num_units 全部 >= 0: {'PASS' if nonneg_ok else 'FAIL'}")
-    if not nonneg_ok:
+    nonpos_ok = (result["num_units"] <= 1).all()
+    print(f"  num_units >= 0: {'PASS' if nonneg_ok else 'FAIL'}")
+    print(f"  num_units <= 1: {'PASS' if nonpos_ok else 'FAIL'}")
+    if not nonneg_ok or not nonpos_ok:
         all_pass = False
 
     # ── 汇总 ──

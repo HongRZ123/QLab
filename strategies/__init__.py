@@ -6,7 +6,7 @@ strategies — 量化策略模块
 用法:
     from strategies import linear_mr, bollinger_mr
     from strategies import kalman_hedge, kalman_mm
-    from strategies.registry import run_strategy, list_names
+    from strategies.registry import list_names   # 仅目录索引
     from strategies.experimental.s11_rsi_draft import rsi_mean_reversion
 """
 

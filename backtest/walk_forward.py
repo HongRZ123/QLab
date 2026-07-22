@@ -28,11 +28,11 @@ walk_forward.py — Walk-Forward 滚动参数估计框架
 import numpy as np
 import pandas as pd
 
+from signals.stats import estimate_half_life
+from signals.stats_cointegration import johansen_test
 from strategies.MR.s4_linear import linear_mr
 from strategies.MR.s7_linear_portfolio import linear_portfolio
 from strategies.MR.s8_bollinger import bollinger_mr
-from tests.s3_half_life import estimate_half_life
-from tests.s6_johansen import johansen_test
 
 # ============================================================
 # 内部辅助
@@ -293,7 +293,7 @@ def walk_forward_portfolio(
 
 def run_validation() -> bool:
     """Walk-Forward 框架验证协议。"""
-    from tests.s3_half_life import generate_ou_paths
+    from signals.stats import generate_ou_paths
 
     print("=" * 60)
     print("Walk-Forward 框架验证协议")

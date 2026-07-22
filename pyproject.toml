@@ -19,10 +19,9 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "explore/*.py" = ["E402"]  # scripts modify sys.path before project imports
+"run/*.py" = ["E402"]  # end-to-end runner scripts: sys.path before project imports
+"alpha/*.py" = ["E402"]  # alpha module: sys.path before project imports
 "*/__main__.py" = ["E402"] # allow standalone entry points
-"run_strategy.py" = ["E402"]  # root script: sys.path before project imports
-"research_strategy.py" = ["E402"]  # root script: sys.path before project imports
-"templates/*.py" = ["E402"]  # template scripts: sys.path before project imports
 
 [tool.ruff.format]
 quote-style = "double"
@@ -38,5 +37,5 @@ reportUnknownArgumentType = "warning"
 reportMissingParameterType = "warning"
 
 reportUnusedVariable = "warning"
-include = ["data", "signals", "tests", "strategies", "backtest", "explore", "run_strategy.py", "research_strategy.py"]
-exclude = ["experiments", "templates"]
+include = ["data", "signals", "tests", "strategies", "backtest", "explore"]
+exclude = ["experiments", "run"]
