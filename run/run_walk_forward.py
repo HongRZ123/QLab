@@ -113,7 +113,6 @@ def walk_forward_linear_mr(
     min_warmup: int = 252,
 ) -> dict:
     from signals.stats import estimate_half_life
-
     from strategies.MR.s4_linear import linear_mr
     n = len(close)
     num_units = pd.Series(0.0, index=close.index, name="num_units")
@@ -176,7 +175,6 @@ def walk_forward_portfolio(
     lag: int = 1,
 ) -> dict:
     from signals.stats_cointegration import johansen_test
-
     from strategies.MR.s7_linear_portfolio import linear_portfolio
     n = len(prices_df)
     num_units = pd.Series(0.0, index=prices_df.index, name="num_units")
