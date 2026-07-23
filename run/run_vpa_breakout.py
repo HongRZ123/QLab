@@ -17,9 +17,9 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pandas as pd
 
-from strategies.Tech.vpa_breakout import vpa_breakout as strategy_fn
+from strategies.experimental.vpa_breakout_signals import vpa_breakout_signals as strategy_fn
 
-STRATEGY_NAME = "vpa_breakout"
+STRATEGY_NAME = "vpa_breakout_signals"
 STRATEGY_KWARGS: dict = {"lookback": 20, "breakout_lookback": 20,
                           "vol_threshold": 1.5, "spread_threshold": 1.5}
 DYNAMIC_SIZING = True

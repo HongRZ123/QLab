@@ -17,9 +17,9 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pandas as pd
 
-from strategies.MR.s8_bollinger import bollinger_mr as strategy_fn
+from strategies.experimental.s8_bollinger_signals import bollinger_mr_signals as strategy_fn
 
-STRATEGY_NAME = "bollinger_mr"
+STRATEGY_NAME = "bollinger_mr_signals"
 STRATEGY_KWARGS: dict = {"lookback": 20, "entry_z": 1.0, "exit_z": 0.0}
 DYNAMIC_SIZING = True
 OUTPUT_CSV: str | None = None

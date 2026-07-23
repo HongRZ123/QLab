@@ -17,9 +17,9 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pandas as pd
 
-from strategies.Tech.ma_crossover import ma_crossover as strategy_fn
+from strategies.experimental.ma_crossover_signals import ma_crossover_signals as strategy_fn
 
-STRATEGY_NAME = "ma_crossover"
+STRATEGY_NAME = "ma_crossover_signals"
 STRATEGY_KWARGS: dict = {"short_window": 5, "long_window": 20}
 DYNAMIC_SIZING = True
 OUTPUT_CSV: str | None = None

@@ -17,9 +17,9 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pandas as pd
 
-from strategies.Tech.vpa_trend import vpa_trend as strategy_fn
+from strategies.experimental.vpa_trend_signals import vpa_trend_signals as strategy_fn
 
-STRATEGY_NAME = "vpa_trend"
+STRATEGY_NAME = "vpa_trend_signals"
 STRATEGY_KWARGS: dict = {"lookback": 20, "confirm_low": 0.7, "confirm_high": 1.5}
 DYNAMIC_SIZING = True
 OUTPUT_CSV: str | None = None

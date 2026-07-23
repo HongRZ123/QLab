@@ -1,9 +1,10 @@
 """
-run/run_vpa_reversal.py 鈥?VPA 姝㈡崯閲忓弽杞?绔埌绔?====================================================
+run/run_vpa_reversal.py — VPA 止损量反转（信号列表版）端到端入口
+=================================================================
 
-data 鈫?alpha.defaults.get_trend_candidates() 鈫?signals.vpa.stopping_volume 鈫?vpa_reversal 鈫?backtest 鈫?output
+data → alpha.defaults.get_trend_candidates() → signals.vpa → vpa_reversal_signals → backtest → output
 
-鐢ㄦ硶:
+用法:
     python run/run_vpa_reversal.py
 """
 from __future__ import annotations
@@ -17,9 +18,9 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pandas as pd
 
-from strategies.Tech.vpa_reversal import vpa_reversal as strategy_fn
+from strategies.experimental.vpa_reversal_signals import vpa_reversal_signals as strategy_fn
 
-STRATEGY_NAME = "vpa_reversal"
+STRATEGY_NAME = "vpa_reversal_signals"
 STRATEGY_KWARGS: dict = {"lookback": 20}
 DYNAMIC_SIZING = True
 OUTPUT_CSV: str | None = None
@@ -37,7 +38,7 @@ def main() -> None:
     candidates = [r["symbol"] for r in screen_momentum(UNIVERSE, top_n=TOP_N)]
     rows: list[dict] = []
 
-    print(f"=== {STRATEGY_NAME} 脳 {len(candidates)} candidates: {', '.join(candidates)}")
+    print(f"=== {STRATEGY_NAME} × {len(candidates)} candidates: {', '.join(candidates)}")
 
     for sym in candidates:
         ohlcv = load_ohlcv(sym)

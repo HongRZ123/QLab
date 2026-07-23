@@ -18,9 +18,9 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 import pandas as pd
 
-from strategies.MR.s4_linear import linear_mr as strategy_fn
+from strategies.experimental.s4_linear_signals import linear_mr_signals as strategy_fn
 
-STRATEGY_NAME = "linear_mr"
+STRATEGY_NAME = "linear_mr_signals"
 STRATEGY_KWARGS: dict = {}
 DYNAMIC_SIZING = True
 OUTPUT_CSV: str | None = None
