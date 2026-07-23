@@ -176,6 +176,28 @@ def run_validation() -> bool:
 
 
 # ============================================================
+# 新接口示例：返回 Signal 列表（可选）
+# ============================================================
+#
+# 如果你更喜欢按“交易信号”思考，可以让策略返回 Signal 列表，
+# 再由 backtest.interpreter 转成 num_units：
+#
+#     from backtest import Signal, interpret_signals
+#
+#     def my_signal_strategy(prices: pd.Series) -> dict:
+#         signals = [
+#             Signal(date="2024-01-05", action="BUY", qty=1.0, stop_loss=0.95),
+#             Signal(date="2024-02-10", action="CLOSE"),
+#         ]
+#         return {
+#             "num_units": interpret_signals(prices, signals),
+#             "signals": signals,
+#         }
+#
+# 详见 strategies/experimental/signal_demo.py 和 vpa_reversal_signals.py。
+
+
+# ============================================================
 # 注册到 Registry (取消注释即可)
 # ============================================================
 
