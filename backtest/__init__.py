@@ -11,7 +11,11 @@ __all__ = [
     "run_backtest",
     "run_backtest_long_only",
     "performance_summary",
+    "Signal",
+    "interpret_signals",
+    "num_units_to_signals",
 ]
 
 from backtest.engine import run_backtest, run_backtest_long_only
+from backtest.interpreter import Signal, interpret_signals, num_units_to_signals
 from backtest.metrics import performance_summary
