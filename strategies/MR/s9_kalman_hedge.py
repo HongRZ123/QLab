@@ -89,8 +89,12 @@ def kalman_hedge(
         >>> result["beta_slope"].shape
         (5,)
     """
+    # 统一转为一维 numpy 数组，避免传入 pd.Series 时触发位置索引警告
+    x_arr = np.asarray(x, dtype=float).reshape(-1)
+    y_arr = np.asarray(y, dtype=float).reshape(-1)
+
     # ── 委托给信号模块 ──
-    result = compute_kalman_spread(x, y, delta, ve)
+    result = compute_kalman_spread(x_arr, y_arr, delta, ve)
     beta_slope = result['beta_slope']
     beta_intercept = result['beta_intercept']
     e_arr = result['e']
@@ -110,8 +114,8 @@ def kalman_hedge(
 
     # ── PnL ──
     # d_spread(t) = (y(t) - y(t-1)) - β₁(t-1) · (x(t) - x(t-1))
-    dy = np.diff(y, prepend=y[0])
-    dx = np.diff(x, prepend=x[0])
+    dy = np.diff(y_arr, prepend=y_arr[0])
+    dx = np.diff(x_arr, prepend=x_arr[0])
 
     # 滞后一期的 β₁ (t=0 时用 0)
     beta_slope_lag = np.zeros(T)
@@ -131,8 +135,8 @@ def kalman_hedge(
     # nu=0 或 gross MV≈0 时 ret=0
     y_lag = np.zeros(T)
     x_lag = np.zeros(T)
-    y_lag[1:] = y[:-1]
-    x_lag[1:] = x[:-1]
+    y_lag[1:] = y_arr[:-1]
+    x_lag[1:] = x_arr[:-1]
 
     gross_mv = np.abs(y_lag) + np.abs(beta_slope_lag * x_lag)
     ret = np.zeros(T)
